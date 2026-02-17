@@ -15,9 +15,10 @@ config = GPT2Config(
 model = (
     AutoModelForCausalLM.from_config(
         config,
-        attn_implementation="sdpa",  # This is the default in newer HF versions anyway
-    ).to(torch.bfloat16)
-    # .to("cuda")
+        attn_implementation="flash_attention_2",  # This is the default in newer HF versions anyway
+    )
+    .to(torch.bfloat16)
+    .to("cuda")
 )
 
 

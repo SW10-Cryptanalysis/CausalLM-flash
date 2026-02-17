@@ -14,10 +14,9 @@ config = LlamaConfig(
 
 # 2. Instantiate the model from scratch WITH Flash Attention 2
 model = (
-    LlamaForCausalLM._from_config(config, attn_implementation="flash_attention_2").to(
-        torch.bfloat16
-    )
-    # .to("cuda")
+    LlamaForCausalLM._from_config(config, attn_implementation="flash_attention_2")
+    .to(torch.bfloat16)
+    .to("cuda")
 )
 
 
