@@ -1,8 +1,6 @@
 import torch
 from transformers import LlamaConfig, LlamaForCausalLM
 
-# 1. Define the size of your custom model and context window
-# Make sure max_position_embeddings is large enough for your long ciphers!
 config = LlamaConfig(
     vocab_size=500,  # Your custom character/integer vocabulary
     max_position_embeddings=8192,  # Long context for your ciphers
@@ -12,7 +10,6 @@ config = LlamaConfig(
     intermediate_size=2048,
 )
 
-# 2. Instantiate the model from scratch WITH Flash Attention 2
 model = (
     LlamaForCausalLM._from_config(config, attn_implementation="flash_attention_2")
     .to(torch.bfloat16)
