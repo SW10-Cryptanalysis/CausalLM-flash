@@ -11,7 +11,7 @@ config = LlamaConfig(
 )
 
 model = (
-    LlamaForCausalLM._from_config(config, attn_implementation="flash_attention_2")
+    LlamaForCausalLM._from_config(config, attn_implementation="sdpa")
     .to(torch.bfloat16)
     .to("cuda")
 )
