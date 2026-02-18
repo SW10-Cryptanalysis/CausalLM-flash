@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 from config import Config
 from model import get_model
-from transformers import Trainer, TrainingArguments, DataCollatorForLanguageModeling
+from transformers import Trainer, TrainingArguments
 
 
 class CipherPlainData(Dataset):
@@ -24,6 +24,15 @@ class CipherPlainData(Dataset):
         }
 
 
+class SDPA(Trainer):
+    def training_step(self, model, inputs):
+        """Force use of Flash, so we crash with inefficient quadratic method"""
+        with torch.backends.cuda.sdp_kernel(
+            enable_flash=True, enable_math=False, enable_mem_efficient=True
+        ):
+            return super().training_step(model, inputs)
+
+
 def train():
     model = get_model()
 
@@ -36,9 +45,11 @@ def train():
         gradient_checkpointing=Config.grad_checkpoint,
         logging_steps=Config.log_steps,
         save_steps=Config.save_steps,
+        # OOM without below
+        bf16=True,
     )
 
-    trainer = Trainer(
+    trainer = SDPA(
         model=model,
         args=args,
         train_dataset=CipherPlainData(),
