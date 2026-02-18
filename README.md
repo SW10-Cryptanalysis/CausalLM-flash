@@ -1,3 +1,7 @@
-# CausalLM-flash
+# CausalLM
 
-Causal LM with flash attention
+Causal LM with xFormers attention
+
+## Usage
+1. Queue up job with ``sbatch train.slum``
+2. Monitor with ``﻿tail -f logs/train_live_<JOB_ID>.log``
