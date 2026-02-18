@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-TEXT_LEN = 16_384
+TEXT_LEN = 8_192
 TOTAL_SEQ = TEXT_LEN * 2
 OUTPUT_DIR = "./outputs"
 
@@ -17,11 +17,11 @@ class Config:
     layers: int = 16
     att_heads: int = 6
     kv_heads: int = 2
-    rope_theta: float = 4_000_000.0
+    rope_theta: float = 1_000_000.0
 
     # TRAINING
-    batch_size: int = 4
-    grad_accum: int = 4
+    batch_size: int = 1
+    grad_accum: int = 16
     learning_rate: float = 3e-4
     epochs: int = 5
 
