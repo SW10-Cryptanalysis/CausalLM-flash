@@ -2,6 +2,10 @@ import json
 import glob
 import os
 import torch
+from model import get_model
+from transformers import Trainer, TrainingArguments
+from torch.nn.attention import sdpa_kernel, SDPBackend
+
 from torch.utils.data import Dataset
 from config import Config
 
@@ -54,3 +58,36 @@ class CipherPlainData(Dataset):
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
             "labels": torch.tensor(labels, dtype=torch.long),
         }
+
+def train():
+    model = get_model()
+
+    args = TrainingArguments(
+        output_dir=Config.output_dir,
+        num_train_epochs=Config.epochs,
+        per_device_train_batch_size=Config.batch_size,
+        gradient_accumulation_steps=Config.grad_accum,
+        learning_rate=Config.learning_rate,
+        gradient_checkpointing=Config.grad_checkpoint,
+        logging_steps=Config.log_steps,
+        save_steps=Config.save_steps,
+        # OOM without below
+        bf16=True,
+    )
+
+    trainer = Trainer(
+        model=model,
+        args=args,
+        train_dataset=CipherPlainData(),
+    )
+
+    print(f"Training on {torch.cuda.get_device_name(0)}...")
+
+    with sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]):
+        trainer.train()
+
+    trainer.save_model(f"{Config.output_dir}/model")
+
+
+if __name__ == "__main__":
+    train()
