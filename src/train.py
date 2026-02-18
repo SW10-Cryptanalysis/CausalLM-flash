@@ -24,15 +24,6 @@ class CipherPlainData(Dataset):
         }
 
 
-class SDPA(Trainer):
-    def training_step(self, model, inputs, *args, **kwargs):
-        """Force use of Flash, so we crash with inefficient quadratic method"""
-        with torch.backends.cuda.sdp_kernel(
-            enable_flash=True, enable_math=False, enable_mem_efficient=True
-        ):
-            return super().training_step(model, inputs, *args, **kwargs)
-
-
 def train():
     model = get_model()
 
@@ -49,7 +40,7 @@ def train():
         bf16=True,
     )
 
-    trainer = SDPA(
+    trainer = Trainer(
         model=model,
         args=args,
         train_dataset=CipherPlainData(),
