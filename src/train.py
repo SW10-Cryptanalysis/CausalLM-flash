@@ -14,44 +14,40 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 class CipherPlainData(Dataset):
     def __init__(self, directory_path):
         self.file_paths = glob.glob(os.path.join(directory_path, "*.json"))
-        print(f"Loaded {len(self.file_paths)} cipher files.")
         
-        # Mapping: 
-        # Let's assume ciphertext symbols are tokens 0-500
-        # Let's assume plaintext 'a'-'z' are tokens 501-526
-        # Token 527 is our separator/SOS token
-        self.char_offset = Config.unique_homophones + 1 # Must be set to the largest homophone count in the dataset
-        self.sep_token = Config.vocab_size
-
-    def __len__(self):
-        return len(self.file_paths)
+        # 1. Dynamically find the max homophone ID if not in Config
+        # Or just use Config.unique_homophones if you're sure it's the max
+        self.max_homophone = Config.unique_homophones 
+        
+        # 2. Define special tokens relative to the max homophone
+        self.sep_token = self.max_homophone + 1
+        self.char_offset = self.sep_token + 1
+        
+        # 3. Create a stable character mapping (No more ASCII 97)
+        # In a real project, you'd load this from a JSON file
+        self.chars = "abcdefghijklmnopqrstuvwxyz " # Add whatever chars you expect
+        self.char_to_id = {char: i for i, char in enumerate(self.chars)}
 
     def __getitem__(self, idx):
         with open(self.file_paths[idx], 'r') as f:
             data = json.load(f)
 
-        # 1. Parse Ciphertext: "18 3 12..." -> [18, 3, 12, ...]
+        # Ciphertext: [1, 18, 5] -> No change needed since it starts at 1
         cipher_ids = [int(x) for x in data["ciphertext"].split()]
         
-        # 2. Parse Plaintext: "baronne..." -> [1, 0, 17, ...] + offset
-        # ord('a') is 97, so ord(char) - 97 maps 'a' to 0.
-        plain_ids = [(ord(c) - 97) + self.char_offset for c in data["plaintext"]]
+        # Plaintext: Map char to its index, then add the offset
+        # Use .get(c, 0) or similar to handle unknown characters safely
+        plain_ids = [self.char_to_id[c] + self.char_offset for c in data["plaintext"]]
 
-        # 3. Combine: [Cipher] + [SEP] + [Plain]
-        # We want the model to predict [Plain] given [Cipher]
+        # Combine
         full_seq = cipher_ids + [self.sep_token] + plain_ids
-        
-        # Truncate or pad to max_context
         full_seq = full_seq[:Config.max_context]
         
-        # 4. Create Labels
-        # In CausalLM, we mask the "prompt" (ciphertext) so the model 
-        # only gets graded on its ability to predict the plaintext.
-        # -100 is the default ignore_index for CrossEntropyLoss
+        # Labels: Mask everything before the plaintext
         labels = ([-100] * (len(cipher_ids) + 1)) + plain_ids
         labels = labels[:Config.max_context]
 
-        # 5. Padding (if necessary, though Trainer handles this with a collator)
+        # Padding (0 is safe because homophones start at 1)
         padding_length = Config.max_context - len(full_seq)
         input_ids = full_seq + [0] * padding_length
         labels = labels + [-100] * padding_length
