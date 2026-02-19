@@ -12,7 +12,7 @@ class Config:
     # Vocab needs to be larger than unique homophone count + unique letter count + 3 (start/end/padding)
     unique_homophones: int = 500
     unique_letters: int = 26
-    vocab_size: int = unique_homophones + unique_letters + 3
+    vocab_size: int = unique_homophones + unique_letters + 1
     # Input is ciphertext + plaintext
     max_context: int = TOTAL_SEQ
     dims: int = 384
