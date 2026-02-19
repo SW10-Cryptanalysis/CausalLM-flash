@@ -1,33 +1,61 @@
-import torch
+import json
+import glob
 import os
-from torch.utils.data import Dataset
-from config import Config
+import torch
 from model import get_model
 from transformers import Trainer, TrainingArguments
 from torch.nn.attention import sdpa_kernel, SDPBackend
 
+from torch.utils.data import Dataset
+from config import Config
+
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
-
 class CipherPlainData(Dataset):
-    def __init__(self):
-        # TODO: here wer should load recurrence encoding first, then plaintext
-        print("Loading dataset...")
-        # TODO: overwrite below with the actual length of the dataset
-        self.data_len = 1000
-
-    def __len__(self):
-        return self.data_len
+    def __init__(self, directory_path):
+        self.file_paths = glob.glob(os.path.join(directory_path, "*.json"))
+        
+        # 1. Dynamically find the max homophone ID if not in Config
+        # Or just use Config.unique_homophones if you're sure it's the max
+        self.max_homophone = Config.unique_homophones 
+        
+        # 2. Define special tokens relative to the max homophone
+        self.sep_token = self.max_homophone + 1
+        self.char_offset = self.sep_token + 1
+        
+        # 3. Create a stable character mapping (No more ASCII 97)
+        # In a real project, you'd load this from a JSON file
+        self.chars = "abcdefghijklmnopqrstuvwxyz " # Add whatever chars you expect
+        self.char_to_id = {char: i for i, char in enumerate(self.chars)}
 
     def __getitem__(self, idx):
-        # TODO: Overwrite below with actual tensor data here, once we have it
-        # Below can be deleted then, it is just for testing
-        seq = torch.randint(0, Config.vocab_size, (Config.max_context,))
-        return {
-            "input_ids": seq,
-            "labels": seq.clone(),
-        }
+        with open(self.file_paths[idx], 'r') as f:
+            data = json.load(f)
 
+        # Ciphertext: [1, 18, 5] -> No change needed since it starts at 1
+        cipher_ids = [int(x) for x in data["ciphertext"].split()]
+        
+        # Plaintext: Map char to its index, then add the offset
+        # Use .get(c, 0) or similar to handle unknown characters safely
+        plain_ids = [self.char_to_id[c] + self.char_offset for c in data["plaintext"]]
+
+        # Combine
+        full_seq = cipher_ids + [self.sep_token] + plain_ids
+        full_seq = full_seq[:Config.max_context]
+        
+        # Labels: Mask everything before the plaintext
+        labels = ([-100] * (len(cipher_ids) + 1)) + plain_ids
+        labels = labels[:Config.max_context]
+
+        # Padding (0 is safe because homophones start at 1)
+        padding_length = Config.max_context - len(full_seq)
+        input_ids = full_seq + [0] * padding_length
+        labels = labels + [-100] * padding_length
+
+        return {
+            "input_ids": torch.tensor(input_ids, dtype=torch.long),
+            "labels": torch.tensor(labels, dtype=torch.long),
+        }
 
 def train():
     model = get_model()
