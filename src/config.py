@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
 TEXT_LEN = 8_192
+UNIQUE_HOMOPHONE_COUNT = 500
+UNIQUE_LETTER_COUNT = 26
 TOTAL_SEQ = TEXT_LEN * 2
 OUTPUT_DIR = "./outputs"
 
@@ -10,8 +12,8 @@ class Config:
     # ARCHITECTURE
 
     # Vocab needs to be larger than unique homophone count + unique letter count + 1 (start/end/padding)
-    unique_homophones: int = 500
-    unique_letters: int = 26
+    unique_homophones: int = UNIQUE_HOMOPHONE_COUNT
+    unique_letters: int = UNIQUE_LETTER_COUNT
     vocab_size: int = unique_homophones + unique_letters + 1
     # Input is ciphertext + plaintext
     max_context: int = TOTAL_SEQ
