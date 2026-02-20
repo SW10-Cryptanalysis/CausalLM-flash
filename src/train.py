@@ -1,5 +1,4 @@
 import json
-import glob
 import os
 import torch
 from model import get_model
@@ -11,51 +10,46 @@ from config import Config
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
+
 class CipherPlainData(Dataset):
-    def __init__(self, directory_path):
-        self.file_paths = glob.glob(os.path.join(directory_path, "*.json"))
-        
-        # 1. Dynamically find the max homophone ID if not in Config
-        # Or just use Config.unique_homophones if you're sure it's the max
-        self.max_homophone = Config.unique_homophones 
-        
-        # 2. Define special tokens relative to the max homophone
-        self.sep_token = self.max_homophone + 1
+    def __init__(self, file_path):
+        with open(file_path, "r") as f:
+            self.data = json.load(f)
+
+        self.sep_token = Config.unique_homophones + 1
         self.char_offset = self.sep_token + 1
-        
-        # 3. Create a stable character mapping (No more ASCII 97)
-        # In a real project, you'd load this from a JSON file
-        self.chars = "abcdefghijklmnopqrstuvwxyz " # Add whatever chars you expect
-        self.char_to_id = {char: i for i, char in enumerate(self.chars)}
+
+    def __len__(self):
+        return len(self.data)
 
     def __getitem__(self, idx):
-        with open(self.file_paths[idx], 'r') as f:
-            data = json.load(f)
+        item = self.data[idx]
 
-        # Ciphertext: [1, 18, 5] -> No change needed since it starts at 1
-        cipher_ids = [int(x) for x in data["ciphertext"].split()]
-        
-        # Plaintext: Map char to its index, then add the offset
-        # Use .get(c, 0) or similar to handle unknown characters safely
-        plain_ids = [self.char_to_id[c] + self.char_offset for c in data["plaintext"]]
+        # Convert ciphertext string to integers
+        cipher_ids = [int(x) for x in item["ciphertext"].split()]
 
-        # Combine
-        full_seq = cipher_ids + [self.sep_token] + plain_ids
-        full_seq = full_seq[:Config.max_context]
-        
-        # Labels: Mask everything before the plaintext
-        labels = ([-100] * (len(cipher_ids) + 1)) + plain_ids
-        labels = labels[:Config.max_context]
+        # Make a-z map to 0-25 and add the char_offset so it does not collide with cipher_ids
+        plain_ids = [(ord(c) - ord("a") + self.char_offset) for c in item["plaintext"]]
 
-        # Padding (0 is safe because homophones start at 1)
-        padding_length = Config.max_context - len(full_seq)
-        input_ids = full_seq + [0] * padding_length
-        labels = labels + [-100] * padding_length
+        # [Cipher] + [SEP] + [Plain]
+        input_ids = cipher_ids + [self.sep_token] + plain_ids
+
+        # Truncate to ensure it fits model context
+        input_ids = input_ids[: Config.max_context]
+
+        # Copy input ids
+        labels = list(input_ids)
+
+        # Padding
+        padding_len = Config.max_context - len(input_ids)
+        input_ids += [0] * padding_len
+        labels += [-100] * padding_len
 
         return {
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
             "labels": torch.tensor(labels, dtype=torch.long),
         }
+
 
 def train():
     model = get_model()
@@ -66,7 +60,8 @@ def train():
         per_device_train_batch_size=Config.batch_size,
         gradient_accumulation_steps=Config.grad_accum,
         learning_rate=Config.learning_rate,
-        gradient_checkpointing=Config.grad_checkpoint,
+        # Faster to train without grad checkpoint
+        gradient_checkpointing=False,
         logging_steps=Config.log_steps,
         save_steps=Config.save_steps,
         # OOM without below
@@ -76,7 +71,7 @@ def train():
     trainer = Trainer(
         model=model,
         args=args,
-        train_dataset=CipherPlainData(),
+        train_dataset=CipherPlainData(Config.data_dir),
     )
 
     print(f"Training on {torch.cuda.get_device_name(0)}...")
@@ -89,3 +84,4 @@ def train():
 
 if __name__ == "__main__":
     train()
+
