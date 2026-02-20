@@ -1,4 +1,3 @@
-import torch
 from transformers import LlamaConfig, LlamaForCausalLM
 from config import Config
 
