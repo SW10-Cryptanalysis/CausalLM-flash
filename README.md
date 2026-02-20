@@ -10,11 +10,8 @@ Causal LM with xFormers attention
 
 All parameters are listed in `src/config.py`.
 
-### Changing cipher length
-If you change cipher length, just change the variable `TEXT_LEN`. Remember to keep lengths at powers of 2, eg. 8192, 16384, etc..
+Make sure you change `DATA_DIR` parameter in `src/config.py` to the correct path to your json training data
 
-### Changing Homophones
-In order to handle increasing amounts of homophones, you need to change `the vocab_size` to be at least unique homophone count + each plaintext letter + 3 (tokens for padding, start, end)
 
 ### Rope-theta
 Remember to adjust this parameter when changing cipher lengths... A good rule of thumb is 1mil for ciphers of length 8192.
