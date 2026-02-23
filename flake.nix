@@ -25,6 +25,7 @@
             buildInputs = [
               python312
               uv
+              ruff
 
               cudaPkgs.cuda_nvcc
               cudaPkgs.cudatoolkit

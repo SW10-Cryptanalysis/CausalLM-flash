@@ -1,20 +1,18 @@
-import torch
 from transformers import LlamaConfig, LlamaForCausalLM
-from config import Config
 
 
-def get_model():
+def get_model(config):
     """Init model with params from config"""
 
     conf = LlamaConfig(
-        vocab_size=Config.vocab_size,
-        max_position_embeddings=Config.max_context,
-        hidden_size=Config.dims,
-        num_hidden_layers=Config.layers,
-        intermediate_size=Config.dims * 4,
-        num_attention_heads=Config.att_heads,
-        num_key_value_heads=Config.kv_heads,
-        rope_theta=Config.rope_theta,
+        vocab_size=config.vocab_size,
+        max_position_embeddings=config.max_context,
+        hidden_size=config.dims,
+        num_hidden_layers=config.layers,
+        intermediate_size=config.dims * 4,
+        num_attention_heads=config.att_heads,
+        num_key_value_heads=config.kv_heads,
+        rope_theta=config.rope_theta,
         # Standard stuff
         hidden_act="silu",
         initializer_range=0.02,
