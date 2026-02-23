@@ -1,3 +1,4 @@
+import json
 import os
 from dataclasses import dataclass
 
@@ -8,8 +9,8 @@ TOTAL_SEQ = TEXT_LEN * 2
 BUFFER = 8
 
 OUTPUT_DIR = "./outputs"
-DATA_DIR = "../../data/"
-HOMOPHONE_FILE = "HCOUNT"
+DATA_DIR = "../../Ciphers/"
+HOMOPHONE_FILE = "metadata.json"
 
 
 @dataclass
@@ -47,7 +48,10 @@ class Config:
         if os.path.exists(homophone_path):
             try:
                 with open(homophone_path, "r") as f:
-                    self.unique_homophones = int(f.read().strip())
+                    meta = json.load(f)
+                    self.unique_homophones = int(
+                        meta.get("max_symbol_id", UNIQUE_HOMOPHONE_COUNT)
+                    )
             except (ValueError, IOError) as e:
                 print(f"Warning - Could not read file: {HOMOPHONE_FILE}")
                 print(f"Using default value: {self.unique_homophones}")
