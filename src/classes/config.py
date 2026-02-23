@@ -83,12 +83,15 @@ class Config:
 			try:
 				with open(homophone_path) as f:
 					meta = json.load(f)
-					self.unique_homophones = int(
-						meta.get("max_symbol_id", UNIQUE_HOMOPHONE_COUNT),
-					)
-			except (OSError, ValueError) as e:
-				logger.warning(f"Warning - Could not read file: {HOMOPHONE_FILE}")
+					homophones = int(meta["max_symbol_id"])
+					self.unique_homophones = homophones
+			except OSError as e:
+				logger.warning(f"Could not read file: {HOMOPHONE_FILE}")
 				logger.warning(f"Using default value: {self.unique_homophones}")
-				logger.warning(f"{e}")
+				logger.warning(f"Error: {e}")
+			except (ValueError, KeyError) as e:
+				logger.warning(f"Invalid or missing data in {HOMOPHONE_FILE}")
+				logger.warning(f"Using default value: {self.unique_homophones}")
+				logger.warning(f"Error: {e}")
 
 		self.vocab_size = self.unique_homophones + self.unique_letters + BUFFER
