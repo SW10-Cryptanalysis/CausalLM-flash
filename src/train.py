@@ -47,7 +47,13 @@ class CipherPlainData(Dataset):
         cipher_ids = [int(x) for x in item["ciphertext"].split()]
 
         # Make a-z map to 0-25 and add the char_offset so it does not collide with cipher_ids
-        plain_ids = [(ord(c) - ord("a") + self.char_offset) for c in item["plaintext"]]
+        plain_ids = []
+        for c in item["plaintext"]:
+            if "a" <= c <= "z":
+                token_id = ord(c) - ord("a") + self.char_offset
+                plain_ids.append(token_id)
+            else:
+                raise ValueError(f"Unexpected char: {c} found in file {file_name}")
 
         # [Cipher] + [SEP] + [Plain]
         input_ids = cipher_ids + [self.sep_token] + plain_ids
