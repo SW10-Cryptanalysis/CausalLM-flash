@@ -1,6 +1,8 @@
 import json
 import os
 import torch
+import zipfile
+import glob
 from model import get_model
 from transformers import Trainer, TrainingArguments
 from torch.nn.attention import sdpa_kernel, SDPBackend
@@ -12,9 +14,18 @@ os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
 
 class CipherPlainData(Dataset):
-    def __init__(self, file_path):
-        with open(file_path, "r") as f:
-            self.data = json.load(f)
+    def __init__(self):
+        self.data = []
+
+        zip_files = glob.glob(os.path.join(Config.data_dir, "*.zip"))
+
+        for zip_path in zip_files:
+            with zipfile.ZipFile(zip_path, "r") as z:
+                for file_name in z.namelist():
+                    if file_name.endswith(".json"):
+                        with z.open(file_name) as f:
+                            json_content = json.load(f)
+                            self.data.append(json_content)
 
         self.sep_token = Config.unique_homophones + 1
         self.char_offset = self.sep_token + 1
@@ -71,7 +82,7 @@ def train():
     trainer = Trainer(
         model=model,
         args=args,
-        train_dataset=CipherPlainData(Config.data_dir),
+        train_dataset=CipherPlainData(),
     )
 
     print(f"Training on {torch.cuda.get_device_name(0)}...")
