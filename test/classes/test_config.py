@@ -1,9 +1,14 @@
 import json
 from classes import Config
+from pathlib import Path
+import classes.config as config_module
 
 class TestConfigInit:
 	def test_init_defaults(self):
 		config = Config()
+  
+		source_file = Path(config_module.__file__)
+
 		assert config.unique_homophones == 500
 		assert config.unique_letters == 26
 		assert config.vocab_size == 500 + 26 + 8
@@ -19,8 +24,11 @@ class TestConfigInit:
 		assert config.epochs == 1
 		assert config.log_steps == 10
 		assert config.save_steps == 500
-		assert config.output_dir == "./outputs"
-		assert config.data_dir == "../../Ciphers/"
+		assert config.output_dir == source_file.parent.parent.parent / "outputs"
+		assert config.data_dir == source_file.parent.parent.parent.parent / "Ciphers"
+
+		print(config.output_dir)
+		print(config.data_dir)
 
 class TestConfigLoadHomophones:
 	def test_load_homophones_success(self, tmp_path):
@@ -30,7 +38,7 @@ class TestConfigLoadHomophones:
 
 		meta_file.write_text(json.dumps({"max_symbol_id": 999}))
 
-		config = Config(data_dir=str(data_dir))
+		config = Config(data_dir=data_dir)
 		config.load_homophones()
 
 		assert config.unique_homophones == 999
@@ -43,7 +51,7 @@ class TestConfigLoadHomophones:
 
 		meta_file.write_text(json.dumps({"max_symb_id": 999}))
 
-		config = Config(data_dir=str(data_dir))
+		config = Config(data_dir=data_dir)
 		config.load_homophones()
 
 		assert config.unique_homophones == 500
@@ -56,7 +64,7 @@ class TestConfigLoadHomophones:
 		data_dir = tmp_path / "data"
 		data_dir.mkdir()
 
-		config = Config(data_dir=str(data_dir))
+		config = Config(data_dir=data_dir)
 		config.load_homophones()
 
 		assert config.unique_homophones == 500
@@ -69,7 +77,7 @@ class TestConfigLoadHomophones:
 
 		meta_file.write_text("invalid json")
 
-		config = Config(data_dir=str(data_dir))
+		config = Config(data_dir=data_dir)
 		config.load_homophones()
 
 		assert config.unique_homophones == 500
@@ -87,7 +95,7 @@ class TestConfigLoadHomophones:
 
 		mocker.patch("builtins.open", side_effect=OSError)
 
-		config = Config(data_dir=str(data_dir))
+		config = Config(data_dir=data_dir)
 		config.load_homophones()
 
 		assert config.unique_homophones == 500

@@ -19,7 +19,7 @@ def real_data_config(tmp_path):
 		for json_file in test_data_dir.glob("*.json"):
 			z.write(json_file, arcname=json_file.name)
 
-	return Config(data_dir=str(tmp_path))
+	return Config(data_dir=tmp_path)
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def cipher_illegal_char(tmp_path, cipher):
 
 	write_cipher(data_dir, cipher)
 
-	return Config(data_dir=str(data_dir))
+	return Config(data_dir=data_dir)
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def cipher_invalid_json(tmp_path, cipher):
 
 	write_cipher(data_dir, cipher)
 
-	return Config(data_dir=str(data_dir))
+	return Config(data_dir=data_dir)
 
 
 class TestCipherPlainDataInit:
@@ -100,7 +100,7 @@ class TestCipherPlainDataInit:
 
 		(data_dir / "not_a_zip.tar.gz").write_text("fake archive")
 
-		dataset = CipherPlainData(Config(data_dir=str(data_dir)))
+		dataset = CipherPlainData(Config(data_dir=data_dir))
 
 		assert len(dataset.file_refs) == 3
 		assert len(dataset) == 3  # Test length simultaneously
@@ -124,7 +124,7 @@ class TestCipherPlainDataInit:
 		with zipfile.ZipFile(zip1_path, "w") as z:
 			z.writestr("not_a_cipher.txt", "Doesn't matter")
 
-		dataset = CipherPlainData(Config(data_dir=str(data_dir)))
+		dataset = CipherPlainData(Config(data_dir=data_dir))
 
 		assert len(dataset) == 0
 

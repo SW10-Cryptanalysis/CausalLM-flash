@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 import logging
 from easy_logging import EasyFormatter
+from pathlib import Path
 
 TEXT_LEN = 8_192
 UNIQUE_HOMOPHONE_COUNT = 500
@@ -10,8 +11,8 @@ UNIQUE_LETTER_COUNT = 26
 TOTAL_SEQ = TEXT_LEN * 2
 BUFFER = 8
 
-OUTPUT_DIR = "./outputs"
-DATA_DIR = "../../Ciphers/"
+OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
 HOMOPHONE_FILE = "metadata.json"
 
 handler = logging.StreamHandler()
@@ -73,8 +74,8 @@ class Config:
 	save_steps: int = 500
 
 	# SYSTEM
-	output_dir: str = OUTPUT_DIR
-	data_dir: str = DATA_DIR
+	output_dir: Path = OUTPUT_DIR
+	data_dir: Path = DATA_DIR
 
 	def load_homophones(self) -> None:
 		"""Load the homophone metadata file and set the unique homophone count."""
