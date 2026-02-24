@@ -1,5 +1,4 @@
 import json
-import pytest
 from classes import Config
 
 class TestConfigInit:
@@ -22,15 +21,15 @@ class TestConfigInit:
 		assert config.save_steps == 500
 		assert config.output_dir == "./outputs"
 		assert config.data_dir == "../../Ciphers/"
-		
+
 class TestConfigLoadHomophones:
 	def test_load_homophones_success(self, tmp_path):
 		data_dir = tmp_path / "data"
 		data_dir.mkdir()
 		meta_file = data_dir / "metadata.json"
-		
+
 		meta_file.write_text(json.dumps({"max_symbol_id": 999}))
-		
+
 		config = Config(data_dir=str(data_dir))
 		config.load_homophones()
 
@@ -41,9 +40,9 @@ class TestConfigLoadHomophones:
 		data_dir = tmp_path / "data"
 		data_dir.mkdir()
 		meta_file = data_dir / "metadata.json"
-  
+
 		meta_file.write_text(json.dumps({"max_symb_id": 999}))
-		
+
 		config = Config(data_dir=str(data_dir))
 		config.load_homophones()
 
@@ -52,11 +51,11 @@ class TestConfigLoadHomophones:
 		assert "WARNING" in caplog.text
 		assert "Invalid or missing data" in caplog.text
 		assert "Using default value" in caplog.text
-  
+
 	def test_load_homophones_no_file(self, tmp_path, caplog):
 		data_dir = tmp_path / "data"
 		data_dir.mkdir()
-  
+
 		config = Config(data_dir=str(data_dir))
 		config.load_homophones()
 
@@ -67,7 +66,7 @@ class TestConfigLoadHomophones:
 		data_dir = tmp_path / "data"
 		data_dir.mkdir()
 		meta_file = data_dir / "metadata.json"
-  
+
 		meta_file.write_text("invalid json")
 
 		config = Config(data_dir=str(data_dir))
@@ -78,14 +77,14 @@ class TestConfigLoadHomophones:
 		assert "WARNING" in caplog.text
 		assert "Invalid or missing data" in caplog.text
 		assert "Using default value" in caplog.text
-  
+
 	def test_load_homophones_error_reading_file(self, tmp_path, caplog, mocker):
 		data_dir = tmp_path / "data"
 		data_dir.mkdir()
 		meta_file = data_dir / "metadata.json"
-  
+
 		meta_file.write_text(json.dumps({"max_symbol_id": 999}))
-  
+
 		mocker.patch("builtins.open", side_effect=OSError)
 
 		config = Config(data_dir=str(data_dir))
