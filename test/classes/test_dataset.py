@@ -152,7 +152,7 @@ class TestCipherPlainDataGetItem:
 		"""Test that the CipherPlainData class raises an error when an
 		invalid JSON file is encountered."""
 		dataset = CipherPlainData(cipher_invalid_json)
-  
+
 		with pytest.raises(ValueError) as e:
 			dataset[0]
 		assert "Item is missing key: plaintext" in str(e.value)

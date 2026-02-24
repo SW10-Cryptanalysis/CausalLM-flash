@@ -13,10 +13,10 @@ class CipherPlainDataItem(TypedDict):
 
     input_ids: torch.Tensor
     labels: torch.Tensor
-    
+
 class CipherItem(TypedDict):
     """TypedDict for CipherItem."""
-    
+
     ciphertext: str
     plaintext: str
     length: int
@@ -127,9 +127,9 @@ class CipherPlainData(Dataset):
 			"input_ids": torch.tensor(input_ids, dtype=torch.long),
 			"labels": torch.tensor(labels, dtype=torch.long),
 		}
-  
+
 	def _validate_item(self, item: dict) -> None:
-		"""Validates that the item is a valid dictionary.
+		"""Validate that the item is a valid dictionary.
 
 		Args:
 			item (dict): The item to validate.
@@ -138,6 +138,6 @@ class CipherPlainData(Dataset):
 			ValueError: If the item is not a valid dictionary.
 
 		"""
-		for key in CipherItem.__annotations__.keys():
+		for key in CipherItem.__annotations__:
 			if key not in item:
 				raise ValueError(f"Item is missing key: {key}")
