@@ -23,12 +23,20 @@ def train() -> None:
 
 	model = get_model(config)
 
+	train_dataset = CipherPlainData(config, data_path=config.data_dir/"Training")
+	eval_dataset = CipherPlainData(config, data_path=config.data_dir/"Test")
+
 	args = TrainingArguments(
 		output_dir=config.output_dir,
 		num_train_epochs=config.epochs,
 		per_device_train_batch_size=config.batch_size,
 		gradient_accumulation_steps=config.grad_accum,
 		learning_rate=config.learning_rate,
+		# Eval
+		eval_strategy="steps",
+		eval_steps=config.log_steps,
+		per_device_eval_batch_size=config.batch_size,
+
 		# Faster to train without grad checkpoint
 		gradient_checkpointing=False,
 		logging_steps=config.log_steps,
@@ -42,7 +50,8 @@ def train() -> None:
 	trainer = Trainer(
 		model=model,
 		args=args,
-		train_dataset=CipherPlainData(config),
+		train_dataset=train_dataset,
+		eval_dataset=eval_dataset,
 	)
 
 	logger.info(f"Training on {torch.cuda.get_device_name(0)}...")

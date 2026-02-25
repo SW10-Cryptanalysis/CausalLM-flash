@@ -1,6 +1,7 @@
 import json
 import glob
 import os
+from pathlib import Path
 import torch
 import zipfile
 
@@ -44,17 +45,20 @@ class CipherPlainData(Dataset):
 
 	"""
 
-	def __init__(self, config: Config) -> None:
+	def __init__(self, config: Config, data_path: Path = None) -> None:
 		"""Initialize the CipherPlainData dataset.
 
 		Args:
 			config (Config): The config object containing the dataset parameters.
+			data_path (Path): Path to the data directory.
 
 		"""
 		self.config = config
 		self.file_refs = []
 
-		zip_files = glob.glob(os.path.join(config.data_dir, "*.zip"))
+
+		target_dir = data_path if data_path else config.data_dir
+		zip_files = glob.glob(os.path.join(target_dir, "*.zip"))
 
 		for zip_path in zip_files:
 			with zipfile.ZipFile(zip_path, "r") as z:
