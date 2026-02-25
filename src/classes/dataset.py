@@ -45,12 +45,13 @@ class CipherPlainData(Dataset):
 
 	"""
 
-    def __init__(self, config: Config, data_path: Path = None) -> None:
+	def __init__(self, config: Config, data_path: Path = None) -> None:
 		"""Initialize the CipherPlainData dataset.
 
 		Args:
 			config (Config): The config object containing the dataset parameters.
-            data_path (Path): directory to the data.
+			data_path (Path): Path to the data directory.
+
 		"""
 		self.config = config
 		self.file_refs = []
