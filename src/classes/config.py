@@ -1,0 +1,98 @@
+import json
+import os
+from dataclasses import dataclass
+import logging
+from easy_logging import EasyFormatter
+from pathlib import Path
+
+TEXT_LEN = 8_192
+UNIQUE_HOMOPHONE_COUNT = 500
+UNIQUE_LETTER_COUNT = 26
+TOTAL_SEQ = TEXT_LEN * 2
+BUFFER = 8
+
+OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
+HOMOPHONE_FILE = "metadata.json"
+
+handler = logging.StreamHandler()
+handler.setFormatter(EasyFormatter())
+logger = logging.getLogger("model.py")
+logger.addHandler(handler)
+
+
+@dataclass
+class Config:
+	"""Config dataclass.
+
+	This dataclass contains the configuration parameters for the model.
+
+	Attributes:
+		unique_homophones (int): The number of unique homophones in the dataset.
+		unique_letters (int): The number of unique letters in the dataset.
+		vocab_size (int): The size of the vocabulary.
+		max_context (int): The maximum context length.
+		dims (int): The number of dimensions in the model.
+		layers (int): The number of layers in the model.
+		att_heads (int): The number of attention heads in the model.
+		kv_heads (int): The number of key-value heads in the model.
+		rope_theta (float): The RoPE theta parameter.
+		batch_size (int): The batch size for training.
+		grad_accum (int): The number of batches to accumulate gradients over.
+		learning_rate (float): The learning rate for training.
+		epochs (int): The number of epochs to train for.
+		log_steps (int): The number of steps to log the training progress at.
+		save_steps (int): The number of steps to save the model at.
+		output_dir (str): The output directory for the model.
+		data_dir (str): The data directory for the model.
+
+	"""
+
+	# ARCHITECTURE
+
+	# Default value is UNIQUE_HOMOPHONE_COUNT unless a HOMOPHONE_FILE exists
+	unique_homophones: int = UNIQUE_HOMOPHONE_COUNT
+	unique_letters: int = UNIQUE_LETTER_COUNT
+
+	# Vocab needs to be larger than unique homophone count + unique letter count
+	# + buffer (start/end/padding, etc)
+	vocab_size: int = UNIQUE_HOMOPHONE_COUNT + UNIQUE_LETTER_COUNT + BUFFER
+	# Input is ciphertext + sep + plaintext
+	max_context: int = TOTAL_SEQ + 1
+	dims: int = 384
+	layers: int = 16
+	att_heads: int = 6
+	kv_heads: int = 2
+	rope_theta: float = 1_000_000.0
+
+	# TRAINING
+	batch_size: int = 1
+	grad_accum: int = 16
+	learning_rate: float = 3e-4
+	epochs: int = 1
+	log_steps: int = 10
+	save_steps: int = 500
+
+	# SYSTEM
+	output_dir: Path = OUTPUT_DIR
+	data_dir: Path = DATA_DIR
+
+	def load_homophones(self) -> None:
+		"""Load the homophone metadata file and set the unique homophone count."""
+		homophone_path = os.path.join(self.data_dir, HOMOPHONE_FILE)
+		if os.path.exists(homophone_path):
+			try:
+				with open(homophone_path) as f:
+					meta = json.load(f)
+					homophones = int(meta["max_symbol_id"])
+					self.unique_homophones = homophones
+			except OSError as e:
+				logger.warning(f"Could not read file: {HOMOPHONE_FILE}")
+				logger.warning(f"Using default value: {self.unique_homophones}")
+				logger.warning(f"Error: {e}")
+			except (ValueError, KeyError) as e:
+				logger.warning(f"Invalid or missing data in {HOMOPHONE_FILE}")
+				logger.warning(f"Using default value: {self.unique_homophones}")
+				logger.warning(f"Error: {e}")
+
+		self.vocab_size = self.unique_homophones + self.unique_letters + BUFFER
