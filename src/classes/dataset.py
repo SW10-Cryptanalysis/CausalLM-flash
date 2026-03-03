@@ -1,12 +1,8 @@
-import json
-import glob
-import os
-from pathlib import Path
 import torch
-import zipfile
-
+from pathlib import Path
 from typing import TypedDict
 from torch.utils.data import Dataset
+from datasets import load_from_disk
 from classes import Config
 
 class CipherPlainDataItem(TypedDict):
@@ -15,17 +11,6 @@ class CipherPlainDataItem(TypedDict):
     input_ids: torch.Tensor
     labels: torch.Tensor
 
-class CipherItem(TypedDict):
-    """TypedDict for CipherItem."""
-
-    ciphertext: str
-    plaintext: str
-    length: int
-    num_symbols: int
-    difficulty: int
-    key: dict
-    source_id: str
-    source_name: str
 
 class CipherPlainData(Dataset):
 	"""CipherPlainData dataset.
@@ -35,48 +20,28 @@ class CipherPlainData(Dataset):
 
 	Attributes:
 		config (Config): The config object containing the dataset parameters.
-		file_refs (list): A list of tuples containing the zip path and file name
-			of each item in the dataset.
-		handles (dict): A dictionary mapping zip paths to their corresponding
-			zipfile.ZipFile objects.
 		sep_token (int): The token ID for the separator token.
 		char_offset (int): The offset to add to the character IDs to avoid
 			colliding with the cipher IDs.
 
 	"""
 
-	def __init__(self, config: Config, data_path: Path | None = None) -> None:
+	def __init__(self, config: Config, split: str = "Training") -> None:
 		"""Initialize the CipherPlainData dataset.
 
 		Args:
 			config (Config): The config object containing the dataset parameters.
-			data_path (Path): Path to the data directory.
+			split (str): The data split to load (e.g., 'Training', 'Test').
 
 		"""
 		self.config = config
-		self.file_refs = []
+		suffix = "_spaced" if config.use_spaces else "_normal"
+		arrow_path = config.data_dir / f"{split}_arrow{suffix}"
 
-		target_dir = data_path if data_path else config.data_dir
-		zip_files = glob.glob(os.path.join(target_dir, "*.zip"))
+		if not arrow_path.exists():
+			raise FileNotFoundError(f"Missing Arrow Data: {arrow_path} - run preprocess.py first.")
 
-		for zip_path in zip_files:
-			with zipfile.ZipFile(zip_path, "r") as z:
-				names = [n for n in z.namelist() if n.endswith(".json")]
-				for file_name in names:
-					self.file_refs.append((zip_path, file_name))
-
-		self.handles = {}
-
-		if self.config.use_spaces:
-			self.text_key = "plaintext_with_boundaries"
-			self.cipher_key = "ciphertext_with_boundaries"
-		else:
-			self.text_key = "plaintext"
-			self.cipher_key = "ciphertext"
-
-		self.sep_token = self.config.unique_homophones + 1
-		self.space_token = self.sep_token + 1
-		self.char_offset = self.space_token + 1
+		self.dataset = load_from_disk(str(arrow_path))
 
 	def __len__(self) -> int:
 		"""Get the length of the dataset.
@@ -85,7 +50,7 @@ class CipherPlainData(Dataset):
 			int: The length of the dataset.
 
 		"""
-		return len(self.file_refs)
+		return len(self.dataset)
 
 	def __getitem__(self, idx: int) -> CipherPlainDataItem:
 		"""Get the item at the given index.
@@ -97,64 +62,23 @@ class CipherPlainData(Dataset):
 			tuple: A tuple containing the zip path and file name of the item.
 
 		"""
-		zip_path, file_name = self.file_refs[idx]
+		item = self.dataset[idx]
 
-		if zip_path not in self.handles:
-			self.handles[zip_path] = zipfile.ZipFile(zip_path, "r")
+		# Ensure lists
+		input_ids = list(item["input_ids"])
+		labels = list(item["labels"])
 
-		with self.handles[zip_path].open(file_name) as f:
-			item = json.load(f)
-
-		self._validate_item(item)
-
-		raw_cipher = item[self.cipher_key].split()
-		cipher_ids = [
-			self.space_token if x == "_" else int(x)
-			for x in raw_cipher
-		]
-
-		# Make a-z map to 0-25 and add the char_offset so it does
-		# not collide with cipher_ids
-		plain_ids = []
-		for c in item[self.text_key]:
-			if c == "_":
-				plain_ids.append(self.space_token)
-
-			elif "a" <= c <= "z":
-				token_id = ord(c) - ord("a") + self.char_offset
-				plain_ids.append(token_id)
-			else:
-				raise ValueError(f"Unexpected char: {c} found in file {file_name}")
-
-		# [Cipher] + [SEP] + [Plain]
-		input_ids = cipher_ids + [self.sep_token] + plain_ids
-
-		# Truncate to ensure it fits model context
+		# Truncate to not exceed max content
 		input_ids = input_ids[: self.config.max_context]
-
-		# Copy input ids
-		labels = list(input_ids)
+		labels = labels[: self.config.max_context]
 
 		# Padding
 		padding_len = self.config.max_context - len(input_ids)
-		input_ids += [0] * padding_len
-		labels += [-100] * padding_len
+		if padding_len > 0:
+			input_ids += [0] * padding_len
+			labels += [-100] * padding_len
 
 		return {
 			"input_ids": torch.tensor(input_ids, dtype=torch.long),
 			"labels": torch.tensor(labels, dtype=torch.long),
 		}
-
-	def _validate_item(self, item: dict) -> None:
-		"""Validate that the item is a valid dictionary.
-
-		Args:
-			item (dict): The item to validate.
-
-		Raises:
-			ValueError: If the item is not a valid dictionary.
-
-		"""
-		for key in CipherItem.__annotations__:
-			if key not in item:
-				raise ValueError(f"Item is missing key: {key}")
