@@ -29,8 +29,8 @@ def train() -> None:
 
 	model = get_model(config)
 
-	train_dataset = CipherPlainData(config, data_path=config.data_dir/"Training")
-	eval_dataset = CipherPlainData(config, data_path=config.data_dir/"Test")
+	train_dataset = CipherPlainData(config, split="Training")
+	eval_dataset = CipherPlainData(config, split="Test")
 
 	args = TrainingArguments(
 		output_dir=config.output_dir,

@@ -78,6 +78,12 @@ class Config:
 	output_dir: Path = OUTPUT_DIR
 	data_dir: Path = DATA_DIR
 
+	@property
+	def tokenized_dir(self) -> Path:
+        """Dynamic path based on whether we use spaces or not."""
+        suffix = "spaced" if self.use_spaces else "normal"
+        return self.data_dir / f"tokenized_{suffix}"
+
 	def load_homophones(self) -> None:
 		"""Load the homophone metadata file and set the unique homophone count."""
 		homophone_path = os.path.join(self.data_dir, HOMOPHONE_FILE)

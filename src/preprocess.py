@@ -1,68 +1,56 @@
 import argparse
-import json
-import zipfile
-import glob
-from pathlib import Path
-from datasets import Dataset as ArrowDataset
+import os
+from datasets import load_dataset, load_from_disk
 from classes import Config
 
-class RawToArrowConverter:
-    """Helper to crawl ZIPs and yield dictionary items for Arrow."""
-    def __init__(self, config: Config, data_path: Path):
-        self.config = config
-        self.zip_files = glob.glob(str(data_path / "*.zip"))
-        
-        # Mapping logic mirrored from your requirements
-        self.sep_token = config.unique_homophones + 1
-        self.space_token = self.sep_token + 1
-        self.char_offset = self.space_token + 1
-        self.text_key = "plaintext_with_boundaries" if config.use_spaces else "plaintext"
-        self.cipher_key = "ciphertext_with_boundaries" if config.use_spaces else "ciphertext"
-
-    def __iter__(self):
-        for zp in self.zip_files:
-            with zipfile.ZipFile(zp, "r") as z:
-                for file_name in [n for n in z.namelist() if n.endswith(".json")]:
-                    with z.open(file_name) as f:
-                        item = json.load(f)
-                    yield self.map_item(item)
-
-    def map_item(self, item):
-        # Cipher mapping
-        raw_cipher = item[self.cipher_key].split()
-        cipher_ids = [self.space_token if x == "_" else int(x) for x in raw_cipher]
-        
-        # Plaintext mapping
-        plain_ids = []
-        for c in item[self.text_key]:
-            if c == "_":
-                plain_ids.append(self.space_token)
-            elif "a" <= c <= "z":
-                plain_ids.append(ord(c) - ord("a") + self.char_offset)
-
-        input_ids = (cipher_ids + [self.sep_token] + plain_ids)[:self.config.max_context]
-        labels = [x for x in input_ids]
-        
-        # We save raw lists to Arrow; padding happens dynamically in the Dataset
-        return {"input_ids": input_ids, "labels": labels}
-
-def run_conversion():
+def preprocess_data():
     parser = argparse.ArgumentParser()
     parser.add_argument("--spaces", action="store_true")
     args = parser.parse_args()
 
-    config = Config()
-    config.use_spaces = args.spaces
-    config.load_homophones()
+    cfg = Config()
+    cfg.use_spaces = args.spaces
+    cfg.load_homophones()
 
-    for split in ["Training", "Test"]:
-        print(f"Converting {split}...")
-        converter = RawToArrowConverter(config, config.data_dir / split)
-        ds = ArrowDataset.from_generator(lambda: converter)
+    # TOKEN IDs
+    sep_token = cfg.unique_homophones + 1
+    space_token = sep_token + 1
+    char_offset = space_token + 1
+
+    # Spaces or no spaces
+    t_key = "plaintext_with_boundaries" if cfg.use_spaces else "plaintext"
+    c_key = "ciphertext_with_boundaries" if cfg.use_spaces else "ciphertext"
+
+    def tokenize_fn(example):
+        # Cipher mapping (splitting and handling _)
+        raw_cipher = example[c_key].split()
+        cipher_ids = [space_token if x == "_" else int(x) for x in raw_cipher]
         
-        suffix = "_spaced" if args.spaces else "_normal"
-        save_path = config.data_dir / f"{split}_arrow{suffix}"
-        ds.save_to_disk(save_path)
+        # Plaintext mapping (char by char)
+        plain_ids = []
+        for char in example[t_key]:
+            if char == "_":
+                plain_ids.append(space_token)
+            elif "a" <= char <= "z":
+                plain_ids.append(ord(char) - ord("a") + char_offset)
+        
+        input_ids = (cipher_ids + [sep_token] + plain_ids)[:cfg.max_context]
+        return {"input_ids": input_ids, "labels": input_ids}
+
+    # Load Raw JSONs
+    for split in ["Training", "Test"]:
+        print(f"Converting {split} (Spaces: {cfg.use_spaces})...")
+        raw_ds = load_dataset("json", data_files=f"{cfg.data_dir}/{split}/*.zip", split="train")
+        
+        tokenized_ds = raw_ds.map(
+            tokenize_fn,
+            num_proc=8,
+            remove_columns=raw_ds.column_names
+        )
+        
+        save_path = cfg.tokenized_dir / split
+        tokenized_ds.save_to_disk(str(save_path))
+        print(f"Saved to {save_path}")
 
 if __name__ == "__main__":
-    run_conversion()
+    preprocess_data()

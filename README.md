@@ -3,8 +3,9 @@
 Causal LM with xFormers attention
 
 ## Usage
-1. Queue up job with ``sbatch train.slurm`` or ``sbatch train.slurm --spaces``to train with word boundaries
-2. Monitor with ``﻿tail -f logs/train_live_<JOB_ID>.log``
+1. Preprocess data using `uv run src/preprocess.py` and `uv run src/preprocess.py --spaces` to generate data for spaces as well.
+ 2. Queue up job with ``sbatch train.slurm`` or ``sbatch train.slurm --spaces``to train with word boundaries as well.
+3. Monitor with ``﻿tail -f logs/train_live_<JOB_ID>.log``
 
 ## Configuration
 

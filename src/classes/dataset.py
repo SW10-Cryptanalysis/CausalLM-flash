@@ -35,13 +35,12 @@ class CipherPlainData(Dataset):
 
 		"""
 		self.config = config
-		suffix = "_spaced" if config.use_spaces else "_normal"
-		arrow_path = config.data_dir / f"{split}_arrow{suffix}"
+		self.path = self.config.tokenized_dir / split
 
-		if not arrow_path.exists():
-			raise FileNotFoundError(f"Missing Arrow Data: {arrow_path} - run preprocess.py first.")
+		if not self.path.exists():
+			raise FileNotFoundError(f"Missing Arrow Data: {self.path} - run preprocess.py first.")
 
-		self.dataset = load_from_disk(str(arrow_path))
+		self.dataset = load_from_disk(str(self.path))
 
 	def __len__(self) -> int:
 		"""Get the length of the dataset.
