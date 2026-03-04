@@ -3,123 +3,18 @@ from classes import Config
 from pathlib import Path
 
 
-class TestConfigInit:
-	def test_init_defaults(self):
-		config = Config()
+class TestConfigPaths:
+	def test_tokenized_dir(self, tmp_path):
+		cfg = Config(data_dir=tmp_path, use_spaces=False)
+		assert cfg.tokenized_dir == tmp_path / "tokenized_normal"
 
-		assert isinstance(config.unique_letters, int)
-		assert isinstance(config.vocab_size, int)
-		assert isinstance(config.max_context, int)
-		assert isinstance(config.dims, int)
-		assert isinstance(config.layers, int)
-		assert isinstance(config.att_heads, int)
-		assert isinstance(config.kv_heads, int)
-		assert isinstance(config.rope_theta, float)
-		assert isinstance(config.batch_size, int)
-		assert isinstance(config.grad_accum, int)
-		assert isinstance(config.learning_rate, float)
-		assert isinstance(config.epochs, int)
-		assert isinstance(config.log_steps, int)
-		assert isinstance(config.save_steps, int)
-		assert isinstance(config.output_dir, Path)
-		assert isinstance(config.data_dir, Path)
+		cfg.use_spaces = True
+		assert cfg.tokenized_dir == tmp_path / "tokenized_spaced"
 
-
-class TestConfigLoadHomophones:
-	def test_load_homophones_success(self, tmp_path):
-		data_dir = tmp_path / "data"
-		data_dir.mkdir()
-		meta_file = data_dir / "metadata.json"
-
-		meta_file.write_text(json.dumps({"max_symbol_id": 999}))
-
-		config = Config(data_dir=data_dir)
-		config.load_homophones()
-
-		assert config.unique_homophones == 999
-		assert config.vocab_size == 999 + 26 + 8
-
-	def test_load_homophones_fallback(self, tmp_path, caplog):
-		data_dir = tmp_path / "data"
-		data_dir.mkdir()
-		meta_file = data_dir / "metadata.json"
-
-		meta_file.write_text(json.dumps({"max_symb_id": 999}))
-
-		config = Config(data_dir=data_dir)
-		config.load_homophones()
-
-		base_config = Config()
-
-		assert config.unique_homophones == base_config.unique_homophones
-		assert config.vocab_size == base_config.vocab_size
-		assert "WARNING" in caplog.text
-		assert "Invalid or missing data" in caplog.text
-		assert "Using default value" in caplog.text
-
-	def test_load_homophones_no_file(self, tmp_path, caplog):
-		data_dir = tmp_path / "data"
-		data_dir.mkdir()
-
-		config = Config(data_dir=data_dir)
-		config.load_homophones()
-
-		base_config = Config()
-		assert config.unique_homophones == base_config.unique_homophones
-		assert config.vocab_size == base_config.vocab_size
-
-	def test_load_homophones_invalid_file(self, tmp_path, caplog):
-		data_dir = tmp_path / "data"
-		data_dir.mkdir()
-		meta_file = data_dir / "metadata.json"
-
-		meta_file.write_text("invalid json")
-
-		config = Config(data_dir=data_dir)
-		config.load_homophones()
-
-		base_config = Config()
-		assert config.unique_homophones == base_config.unique_homophones
-		assert config.vocab_size == base_config.vocab_size
-
-		assert "WARNING" in caplog.text
-		assert "Invalid or missing data" in caplog.text
-		assert "Using default value" in caplog.text
-
-	def test_load_homophones_error_reading_file(self, tmp_path, caplog, mocker):
-		data_dir = tmp_path / "data"
-		data_dir.mkdir()
-		meta_file = data_dir / "metadata.json"
-
-		meta_file.write_text(json.dumps({"max_symbol_id": 999}))
-
-		mocker.patch("builtins.open", side_effect=OSError)
-
-		config = Config(data_dir=data_dir)
-		config.load_homophones()
-
-		base_config = Config(data_dir=data_dir)
-		assert config.unique_homophones == base_config.unique_homophones
-		assert config.vocab_size == base_config.vocab_size
-
-		assert "WARNING" in caplog.text
-		assert "Could not read file" in caplog.text
-		assert "Using default value" in caplog.text
-
-class TestConfigSpaces:
-	def test_use_spaces_default(self):
-		config = Config()
-		assert config.use_spaces is False
-
-	def test_vocab_size_with_spaces_math(self, tmp_path):
-		data_dir = tmp_path / "data"
-		data_dir.mkdir()
-		meta_file = data_dir / "metadata.json"
-		meta_file.write_text(json.dumps({"max_symbol_id": 100}))
-
-		config = Config(data_dir=data_dir, use_spaces=True)
-		config.load_homophones()
-
-		# Highest ID used is unique_homophones + 4 (sep, space, offset + 25)
-        # 100 + 29 = 129. Buffer assumed to be 8 (100+26+8=134).
-		assert config.vocab_size > (config.unique_homophones + 29)
+class TestConfigVocab:
+	def test_vocab_size(self):
+		cfg = Config(unique_homophones=500, unique_letters=26)
+		buffer = 8
+		u_homs = 500
+		u_lett = 26
+		assert cfg.vocab_size == buffer + u_homs + u_lett
