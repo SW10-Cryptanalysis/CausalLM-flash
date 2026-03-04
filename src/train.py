@@ -17,6 +17,7 @@ handler.setFormatter(EasyFormatter())
 logger = logging.getLogger("model.py")
 logger.addHandler(handler)
 
+
 def train() -> None:
 	"""Start training the model with the given config."""
 	parser = argparse.ArgumentParser()
@@ -42,7 +43,6 @@ def train() -> None:
 		eval_strategy="steps",
 		eval_steps=config.log_steps,
 		per_device_eval_batch_size=config.batch_size,
-
 		# Faster to train without grad checkpoint
 		gradient_checkpointing=False,
 		logging_steps=config.log_steps,

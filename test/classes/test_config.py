@@ -1,6 +1,4 @@
-import json
 from classes import Config
-from pathlib import Path
 
 
 class TestConfigPaths:
@@ -10,6 +8,7 @@ class TestConfigPaths:
 
 		cfg.use_spaces = True
 		assert cfg.tokenized_dir == tmp_path / "tokenized_spaced"
+
 
 class TestConfigVocab:
 	def test_vocab_size(self):

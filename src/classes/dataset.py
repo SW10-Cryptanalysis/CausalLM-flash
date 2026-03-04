@@ -1,15 +1,15 @@
 import torch
-from pathlib import Path
 from typing import TypedDict
 from torch.utils.data import Dataset
 from datasets import load_from_disk
 from classes import Config
 
-class CipherPlainDataItem(TypedDict):
-    """TypedDict for CipherPlainDataItem."""
 
-    input_ids: torch.Tensor
-    labels: torch.Tensor
+class CipherPlainDataItem(TypedDict):
+	"""TypedDict for CipherPlainDataItem."""
+
+	input_ids: torch.Tensor
+	labels: torch.Tensor
 
 
 class CipherPlainData(Dataset):
@@ -38,7 +38,9 @@ class CipherPlainData(Dataset):
 		self.path = self.config.tokenized_dir / split
 
 		if not self.path.exists():
-			raise FileNotFoundError(f"Missing Arrow Data: {self.path} - run preprocess.py first.")
+			raise FileNotFoundError(
+				f"Missing Arrow Data: {self.path} - run preprocess.py first.",
+			)
 
 		self.dataset = load_from_disk(str(self.path))
 
