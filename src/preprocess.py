@@ -38,20 +38,20 @@ class RawToArrowConverter:
 		"""
 		# Cipher mapping (splitting and handling _)
 		raw_cipher = example[self.c_key].split()
-		cipher_ids = [self.space_token if x == "_" else int(x) for x in raw_cipher]
+		cipher_ids = [self.cfg.space_token if x == "_" else int(x) for x in raw_cipher]
 
 		# Plaintext mapping (char by char)
 		plain_ids = []
 		for char in example[self.t_key]:
 			if char == "_":
-				plain_ids.append(self.space_token)
+				plain_ids.append(self.cfg.space_token)
 			elif "a" <= char <= "z":
-				plain_ids.append(ord(char) - ord("a") + self.char_offset)
+				plain_ids.append(ord(char) - ord("a") + self.cfg.char_offset)
 
 		input_ids = (
 			[self.cfg.bos_token_id]
 			+ cipher_ids
-			+ [self.sep_token]
+			+ [self.cfg.sep_token]
 			+ plain_ids
 			+ [self.cfg.eos_token_id]
 		)[: self.cfg.max_context]
