@@ -65,6 +65,14 @@ class Config:
 	kv_heads: int = 2
 	rope_theta: float = 1_000_000.0
 
+	# TOKENS
+	pad_token: int = 0
+	sep_token_id: int = unique_homophones + 1
+	space_token_id: int = sep_token_id + 1
+	bos_token_id: int = space_token_id + 1
+	eos_token_id: int = bos_token_id + 1
+	char_offset = int = eos_token_id + 1
+
 	# TRAINING
 	batch_size: int = 1
 	grad_accum: int = 16

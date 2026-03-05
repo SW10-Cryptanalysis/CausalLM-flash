@@ -22,11 +22,6 @@ class RawToArrowConverter:
 		"""
 		self.cfg = config
 
-		# TOKEN IDs
-		self.sep_token = config.unique_homophones + 1
-		self.space_token = self.sep_token + 1
-		self.char_offset = self.space_token + 1
-
 		# Key selection
 		self.t_key = "plaintext_with_boundaries" if config.use_spaces else "plaintext"
 		self.c_key = "ciphertext_with_boundaries" if config.use_spaces else "ciphertext"
@@ -53,7 +48,13 @@ class RawToArrowConverter:
 			elif "a" <= char <= "z":
 				plain_ids.append(ord(char) - ord("a") + self.char_offset)
 
-		input_ids = (cipher_ids + [self.sep_token] + plain_ids)[: self.cfg.max_context]
+		input_ids = (
+			[self.cfg.bos_token_id]
+			+ cipher_ids
+			+ [self.sep_token]
+			+ plain_ids
+			+ [self.cfg.eos_token_id]
+		)[: self.cfg.max_context]
 		return {"input_ids": input_ids, "labels": input_ids}
 
 

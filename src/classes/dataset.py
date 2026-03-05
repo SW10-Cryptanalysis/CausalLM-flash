@@ -10,6 +10,7 @@ class CipherPlainDataItem(TypedDict):
 
 	input_ids: torch.Tensor
 	labels: torch.Tensor
+	attention_mask: torch.Tensor
 
 
 class CipherPlainData(Dataset):
@@ -69,17 +70,22 @@ class CipherPlainData(Dataset):
 		input_ids = list(item["input_ids"])
 		labels = list(item["labels"])
 
+		attention_mask = [1] * len(input_ids)
+
 		# Truncate to not exceed max content
 		input_ids = input_ids[: self.config.max_context]
 		labels = labels[: self.config.max_context]
+		attention_mask = attention_mask[: self.config.max_context]
 
 		# Padding
 		padding_len = self.config.max_context - len(input_ids)
 		if padding_len > 0:
 			input_ids += [0] * padding_len
 			labels += [-100] * padding_len
+			attention_mask += [0] * padding_len
 
 		return {
 			"input_ids": torch.tensor(input_ids, dtype=torch.long),
+			"attention_mask": torch.tensor(attention_mask, dtype=torch.long),
 			"labels": torch.tensor(labels, dtype=torch.long),
 		}
