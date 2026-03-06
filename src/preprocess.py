@@ -92,12 +92,13 @@ def preprocess_data() -> None:
 		logger.info("Converting %s (Spaces: %s)...", split, cfg.use_spaces)
 
 		# load_dataset returns a DatasetDict if split isn't specified
-		raw_ds = load_dataset(
+		ds_dict = load_dataset(
 			"json",
 			data_files=f"{cfg.data_dir}/{split}/*.zip",
 			features=features,
 		)
 
+		raw_ds = ds_dict["train"]
 		tokenized_ds = raw_ds.map(
 			converter.tokenize_fn,
 			num_proc=8,
