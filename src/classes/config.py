@@ -65,13 +65,31 @@ class Config:
 	kv_heads: int = 2
 	rope_theta: float = 1_000_000.0
 
-	# TOKENS
-	pad_token: int = 0
-	sep_token_id: int = unique_homophones + 1
-	space_token_id: int = sep_token_id + 1
-	bos_token_id: int = space_token_id + 1
-	eos_token_id: int = bos_token_id + 1
-	char_offset: int = eos_token_id + 1
+	# TOKEN PROPERTIES
+	@property
+	def sep_token_id(self) -> int:
+		"""Seperator token."""
+		return self.unique_homophones + 1
+
+	@property
+	def space_token_id(self) -> int:
+		"""Space token."""
+		return self.sep_token_id + 1
+
+	@property
+	def bos_token_id(self) -> int:
+		"""Beginning of sequence token."""
+		return self.space_token_id + 1
+
+	@property
+	def eos_token_id(self) -> int:
+		"""End of sequence token."""
+		return self.bos_token_id + 1
+
+	@property
+	def char_offset(self) -> int:
+		"""Character ofset to avoid clashes with defined tokens."""
+		return self.eos_token_id + 1
 
 	# TRAINING
 	batch_size: int = 1

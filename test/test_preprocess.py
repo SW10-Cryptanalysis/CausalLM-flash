@@ -15,37 +15,23 @@ def sample_payload():
 
 
 def test_mapping_logic_no_spaces(sample_payload):
-	# 1. Setup Config
 	cfg = Config(unique_homophones=10, use_spaces=False)
-
-	# 2. Manually set tokens (if your Config doesn't do this in __init__)
-	cfg.bos_token_id = 100
-	cfg.eos_token_id = 101
-	cfg.sep_token_id = 11
-	cfg.space_token_id = 12
-	cfg.char_offset = 13
 	cfg.max_context = 100
 
 	converter = RawToArrowConverter(cfg)
 	result = converter.tokenize_fn(sample_payload)
 	ids = result["input_ids"]
 
-	# Expected: [BOS] + [1, 2] + [SEP] + [13, 14] + [EOS]
-	assert ids == [100, 1, 2, 11, 13, 14, 101]
+	# [BOS] + [1, 2] + [SEP] + [15, 16] + [EOS]
+	assert ids == [13, 1, 2, 11, 15, 16, 14]
 
 
 def test_mapping_logic_with_spaces(sample_payload):
 	cfg = Config(unique_homophones=10, use_spaces=True)
-	cfg.bos_token_id = 100
-	cfg.eos_token_id = 101
-	cfg.sep_token_id = 11
-	cfg.space_token_id = 12
-	cfg.char_offset = 13
-	cfg.max_context = 100
 
 	converter = RawToArrowConverter(cfg)
 	result = converter.tokenize_fn(sample_payload)
 	ids = result["input_ids"]
 
-	# Expected: [BOS] + [1, 12, 2] + [SEP] + [13, 12, 14] + [EOS]
-	assert ids == [100, 1, 12, 2, 11, 13, 12, 14, 101]
+	# Expected: [BOS] + [1, 12, 2] + [SEP] + [15, 12, 16] + [EOS]
+	assert ids == [13, 1, 12, 2, 11, 15, 12, 16, 14]
