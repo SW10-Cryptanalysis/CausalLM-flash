@@ -1,9 +1,11 @@
+import json
 import argparse
 import logging
-from datasets import load_dataset, Features, Value
+from datasets import Dataset, Features, Value
 from classes import Config
 from easy_logging import EasyFormatter
-from typing import Any
+from typing import Any, Generator
+from pathlib import Path
 
 handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())
@@ -31,8 +33,6 @@ class RawToArrowConverter:
 
 		"""
 		self.cfg = config
-
-		# Key selection
 		self.t_key = "plaintext_with_boundaries" if config.use_spaces else "plaintext"
 		self.c_key = "ciphertext_with_boundaries" if config.use_spaces else "ciphertext"
 
@@ -90,15 +90,16 @@ def preprocess_data() -> None:
 	# Load Raw JSONs
 	for split in ["Training", "Test", "Validation"]:
 		logger.info("Converting %s (Spaces: %s)...", split, cfg.use_spaces)
+		split_path = cfg.data_dir / split
 
-		# load_dataset returns a DatasetDict if split isn't specified
-		ds_dict = load_dataset(
-			"json",
-			data_files=f"{cfg.data_dir}/{split}/*.zip",
-			features=features,
-		)
+		def gen(path: Path = split_path) -> Generator[dict[str, Any], None, None]:
+			for file_path in path.iterdir():
+				if file_path.suffix == ".json":
+					with open(file_path) as f:
+						yield json.load(f)
 
-		raw_ds = ds_dict["train"]
+		raw_ds = Dataset.from_generator(gen, features=features)
+
 		tokenized_ds = raw_ds.map(
 			converter.tokenize_fn,
 			num_proc=8,
