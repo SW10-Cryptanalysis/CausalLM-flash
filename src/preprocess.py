@@ -95,7 +95,6 @@ def preprocess_data() -> None:
 		raw_ds = load_dataset(
 			"json",
 			data_files=f"{cfg.data_dir}/{split}/*.zip",
-			split="train",
 			features=features,
 		)
 
