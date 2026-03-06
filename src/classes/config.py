@@ -13,12 +13,7 @@ BUFFER = 8
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
 # DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
-DATA_DIR_DEFAULT = Path("/ceph/project/SW10-CausalLM/Ciphers")
-if not DATA_DIR_DEFAULT.exists():
-	# Fallback for local testing
-	DATA_DIR = Path(__file__).resolve().parents[3] / "Ciphers"
-else:
-	DATA_DIR = DATA_DIR_DEFAULT
+DATA_DIR = Path("/ceph/project/SW10-CausalLM/Ciphers")
 
 HOMOPHONE_FILE = "metadata.json"
 

@@ -1,6 +1,6 @@
 import argparse
 import logging
-from datasets import load_dataset
+from datasets import load_dataset, Features, Value
 from classes import Config
 from easy_logging import EasyFormatter
 from typing import Any
@@ -9,6 +9,15 @@ handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())
 logger = logging.getLogger("model.py")
 logger.addHandler(handler)
+
+features = Features(
+	{
+		"ciphertext": Value("string"),
+		"plaintext": Value("string"),
+		"ciphertext_with_boundaries": Value("string"),
+		"plaintext_with_boundaries": Value("string"),
+	},
+)
 
 
 class RawToArrowConverter:
@@ -87,6 +96,7 @@ def preprocess_data() -> None:
 			"json",
 			data_files=f"{cfg.data_dir}/{split}/*.zip",
 			split="train",
+			features=features,
 		)
 
 		tokenized_ds = raw_ds.map(
