@@ -10,7 +10,7 @@
 
 set -e
 
-PROJECT_DIR=/ceph/project/SW10-CausalLM/CausalLM-flash
+PROJECT_DIR=/ceph/project/SW10-CausalLM/Llama-xFormers
 cd $PROJECT_DIR
 
 mkdir -p logs
