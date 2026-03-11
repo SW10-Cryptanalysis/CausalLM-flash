@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=llama
-#SBATCH --output=/ceph/project/SW10-CausalLM/CausalLM-flash/logs/slurm_%x_%j.out
-#SBATCH --error=/ceph/project/SW10-CausalLM/CausalLM-flash/logs/slurm_%x_%j.err
+#SBATCH --output=train_%j.out
+#SBATCH --error=train_%j.err
 #SBATCH --time=12:00:00
 #SBATCH --partition=l4
 #SBATCH --cpus-per-task=8
