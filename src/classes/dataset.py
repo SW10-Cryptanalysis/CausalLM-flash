@@ -65,27 +65,15 @@ class CipherPlainData(Dataset):
 
 		"""
 		item = self.dataset[idx]
-
-		# Ensure lists
-		input_ids = list(item["input_ids"])
-		labels = list(item["labels"])
-
-		attention_mask = [1] * len(input_ids)
-
-		# Truncate to not exceed max content
-		input_ids = input_ids[: self.config.max_context]
-		labels = labels[: self.config.max_context]
-		attention_mask = attention_mask[: self.config.max_context]
-
-		# Padding
-		padding_len = self.config.max_context - len(input_ids)
-		if padding_len > 0:
-			input_ids += [0] * padding_len
-			labels += [-100] * padding_len
-			attention_mask += [0] * padding_len
+		
+		input_ids = torch.tensor(item["input_ids"], dtype=torch.long)
+		labels = torch.tensor(item["labels"], dtype=torch.long)
+		
+		# Generate mask on the fly (1 for real tokens, 0 for padding)
+		attention_mask = (input_ids != 0).long() 
 
 		return {
-			"input_ids": torch.tensor(input_ids, dtype=torch.long),
-			"attention_mask": torch.tensor(attention_mask, dtype=torch.long),
-			"labels": torch.tensor(labels, dtype=torch.long),
+			"input_ids": input_ids,
+			"attention_mask": attention_mask,
+			"labels": labels,
 		}

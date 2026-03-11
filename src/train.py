@@ -31,10 +31,10 @@ def train() -> None:
 	model = get_model(config)
 
 	train_dataset = CipherPlainData(config, split="Training")
-	eval_dataset = CipherPlainData(config, split="Test")
+	eval_dataset = CipherPlainData(config, split="Validation")
 
 	args = TrainingArguments(
-		output_dir=config.output_dir,
+		output_dir=str(config.output_dir),
 		num_train_epochs=config.epochs,
 		per_device_train_batch_size=config.batch_size,
 		gradient_accumulation_steps=config.grad_accum,
@@ -51,6 +51,12 @@ def train() -> None:
 		bf16=True,
 		dataloader_num_workers=4,
 		dataloader_pin_memory=True,
+		# Checkpointing
+		save_total_limit=2,
+		load_best_model_at_end=True,
+		metric_for_best_model="eval_loss",
+		greater_is_better=False,
+		ignore_data_skip=True,
 	)
 
 	trainer = Trainer(
@@ -60,10 +66,15 @@ def train() -> None:
 		eval_dataset=eval_dataset,
 	)
 
-	logger.info(f"Training on {torch.cuda.get_device_name(0)}...")
+	checkpoint = None
+	if os.path.isdir(config.output_dir) and any(config.output_dir.iterdir()):
+		checkpoint = True
+		logger.info(f"Checkpoint detected in {config.output_dir} - Resuming training...")
+	else:
+		logger.info(f"Training on {torch.cuda.get_device_name(0)}...")
 
 	with sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]):
-		trainer.train()
+		trainer.train(resume_from_checkpoint=checkpoint)
 
 	if config.use_spaces:
 		save_dest = f"{config.output_dir}/model_with_spaces"
