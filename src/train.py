@@ -77,8 +77,7 @@ def train() -> None:
 	else:
 		logger.info(f"Training on {torch.cuda.get_device_name(0)}...")
 
-	with sdpa_kernel([SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]):
-		trainer.train(resume_from_checkpoint=checkpoint)
+	trainer.train(resume_from_checkpoint=checkpoint)
 
 	if config.use_spaces:
 		save_dest = f"{config.output_dir}/model_with_spaces"
