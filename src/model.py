@@ -45,7 +45,6 @@ def get_model(config: Config) -> LlamaForCausalLM:
 	)
 
 	model = LlamaForCausalLM(conf)
-	model.to(torch.bfloat16)
 	logger.info("Llama Model loaded!")
 	logger.info(f"Parameters:       {model.num_parameters():,}")
 	logger.info(f"VRAM for Weights: {(model.get_memory_footprint() / 1e9):.4f} GB")

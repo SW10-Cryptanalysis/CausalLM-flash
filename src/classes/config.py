@@ -94,8 +94,8 @@ class Config:
 		return self.eos_token_id + 1
 
 	# TRAINING
-	batch_size: int = 4
-	grad_accum: int = 8
+	batch_size: int = 1
+	grad_accum: int = 16
 	learning_rate: float = 3e-4
 	epochs: int = 5
 	log_steps: int = 10

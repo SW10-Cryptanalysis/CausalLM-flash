@@ -49,9 +49,12 @@ def train() -> None:
 		logging_steps=config.log_steps,
 		save_steps=config.save_steps,
 		# OOM without below
+		fp16=False,
 		bf16=True,
-		dataloader_num_workers=8,
+		tf32=True,
+		dataloader_num_workers=4,
 		dataloader_pin_memory=True,
+		ddp_find_unused_parameters=False,
 		# Checkpointing
 		save_total_limit=2,
 		load_best_model_at_end=True,
