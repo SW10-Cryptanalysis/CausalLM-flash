@@ -5,22 +5,25 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "accelerate>=1.12.0",
-    "numpy<2.0.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
-    "torch==2.9.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-    "torch<2.3.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
-    "transformers>=5.2.0",
-    "easy-logging-formatter>=0.1.1",
-    "datasets>=4.6.1",
+  "accelerate>=1.12.0",
+  "numpy<2.0.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "torch==2.9.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "torch<2.3.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "transformers>=5.2.0",
+  "easy-logging-formatter>=0.1.1",
+  "datasets>=4.6.1",
 ]
-tool.uv.required-environments = ["macosx_26_0_x86_64"]
+
+[tool.uv]
+required-environments = ["macosx_26_0_x86_64"]
+no-build-isolation-package = ["flash-attn"]
 
 [dependency-groups]
 dev = [
-	"pytest>=8.4.2",
-    "pytest-cov>=7.0.0",
-    "pytest-mock>=3.15.1",
-	"ruff>=0.15.2"
+  "pytest>=8.4.2",
+  "pytest-cov>=7.0.0",
+  "pytest-mock>=3.15.1",
+  "ruff>=0.15.2",
 ]
 
 [tool.pytest.ini_options]
@@ -29,43 +32,65 @@ testpaths = ["test"]
 addopts = "-v --tb=short --cov=src --cov-report=term-missing"
 
 [tool.coverage.report]
-exclude_also = [
-	"if 0:",
-    "if __name__ == .__main__.:",
-	"import",
-	"from",
-]
-omit = [
-	"src/model.py",
-	"src/train.py",
-]
+exclude_also = ["if 0:", "if __name__ == .__main__.:", "import", "from"]
+omit = ["src/model.py", "src/train.py"]
 
 [tool.ruff]
 line-length = 88
 
 [tool.ruff.lint]
-exclude = ["venv", ".venv", "__pycache__", "build", "dist", ".eggs", "*.egg", ".mypy_cache", ".pytest_cache"]
-select = ["E", "F", "W", "C90", "B", "B9", "ANN", "COM", "D", "ERA", "ISC", "N", "Q000", "S", "SIM", "TID251", "UP", "YTT", "T"]
+exclude = [
+  "venv",
+  ".venv",
+  "__pycache__",
+  "build",
+  "dist",
+  ".eggs",
+  "*.egg",
+  ".mypy_cache",
+  ".pytest_cache",
+]
+select = [
+  "E",
+  "F",
+  "W",
+  "C90",
+  "B",
+  "B9",
+  "ANN",
+  "COM",
+  "D",
+  "ERA",
+  "ISC",
+  "N",
+  "Q000",
+  "S",
+  "SIM",
+  "TID251",
+  "UP",
+  "YTT",
+  "T",
+]
 ignore = [
-	"W191",  # indentation contains tabs
-	"ERA001", # Found commented-out code
-	"S311",  # Standard pseudo-random generators are not suitable for security/cryptographic purposes
-	"D206",  # Docstring should be indented with spaces equal to the surrounding code
-	"D100",  # Missing docstring in public module
-	"D203",  # incorrect-blank-line-before-class
-	"D213",  # multi-line-summary-second-line
-	"UP035", # Import from `collections.abc`instead: ...
-	"ANN401",# Dynamically typed expressions (typing.Any) are disallowed 
+  "W191",   # indentation contains tabs
+  "ERA001", # Found commented-out code
+  "S311",   # Standard pseudo-random generators are not suitable for security/cryptographic purposes
+  "D206",   # Docstring should be indented with spaces equal to the surrounding code
+  "D100",   # Missing docstring in public module
+  "D203",   # incorrect-blank-line-before-class
+  "D213",   # multi-line-summary-second-line
+  "UP035",  # Import from `collections.abc`instead: ...
+  "ANN401", # Dynamically typed expressions (typing.Any) are disallowed 
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "test/**/*.py" = [
-    "S101",    # Use of assert detected
-    "D",       # All docstring rules
-    "ANN",     # All type annotation rules
-	"E501",   # Line too long
-	"COM812",  # Missing trailing comma in a list or dict
-	"ERA001", # Found commented-out code
+  "S101",   # Use of assert detected
+  "D",      # All docstring rules
+  "ANN",    # All type annotation rules
+  "E501",   # Line too long
+  "COM812", # Missing trailing comma in a list or dict
+  "ERA001", # Found commented-out code
 ]
 [tool.ruff.format]
 indent-style = "tab"
