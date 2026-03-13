@@ -5,14 +5,16 @@ import logging
 from easy_logging import EasyFormatter
 from pathlib import Path
 
-TEXT_LEN = 8_192
+TEXT_LEN = 10_000
 UNIQUE_HOMOPHONE_COUNT = 500
 UNIQUE_LETTER_COUNT = 26
 TOTAL_SEQ = TEXT_LEN * 2
 BUFFER = 8
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
+# DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
+DATA_DIR = Path("/ceph/project/SW10-CausalLM/Ciphers")
+
 HOMOPHONE_FILE = "metadata.json"
 
 handler = logging.StreamHandler()
@@ -55,7 +57,7 @@ class Config:
 	unique_letters: int = UNIQUE_LETTER_COUNT
 
 	# Vocab needs to be larger than unique homophone count + unique letter count
-	# + buffer (start/end/padding, etc)
+	# + buffer (start/end/padding, etc) and maybe spacing "_"
 	vocab_size: int = UNIQUE_HOMOPHONE_COUNT + UNIQUE_LETTER_COUNT + BUFFER
 	# Input is ciphertext + sep + plaintext
 	max_context: int = TOTAL_SEQ + 1
@@ -65,17 +67,50 @@ class Config:
 	kv_heads: int = 2
 	rope_theta: float = 1_000_000.0
 
+	# TOKEN PROPERTIES
+	@property
+	def sep_token_id(self) -> int:
+		"""Seperator token."""
+		return self.unique_homophones + 1
+
+	@property
+	def space_token_id(self) -> int:
+		"""Space token."""
+		return self.sep_token_id + 1
+
+	@property
+	def bos_token_id(self) -> int:
+		"""Beginning of sequence token."""
+		return self.space_token_id + 1
+
+	@property
+	def eos_token_id(self) -> int:
+		"""End of sequence token."""
+		return self.bos_token_id + 1
+
+	@property
+	def char_offset(self) -> int:
+		"""Character ofset to avoid clashes with defined tokens."""
+		return self.eos_token_id + 1
+
 	# TRAINING
-	batch_size: int = 1
-	grad_accum: int = 16
+	batch_size: int = 2
+	grad_accum: int = 8
 	learning_rate: float = 3e-4
-	epochs: int = 1
+	epochs: int = 5
 	log_steps: int = 10
-	save_steps: int = 500
+	save_steps: int = 1000
+	use_spaces: bool = False
 
 	# SYSTEM
 	output_dir: Path = OUTPUT_DIR
 	data_dir: Path = DATA_DIR
+
+	@property
+	def tokenized_dir(self) -> Path:
+		"""Dynamic path based on whether we use spaces or not."""
+		suffix = "spaced" if self.use_spaces else "normal"
+		return self.data_dir / f"tokenized_{suffix}"
 
 	def load_homophones(self) -> None:
 		"""Load the homophone metadata file and set the unique homophone count."""
@@ -95,4 +130,4 @@ class Config:
 				logger.warning(f"Using default value: {self.unique_homophones}")
 				logger.warning(f"Error: {e}")
 
-		self.vocab_size = self.unique_homophones + self.unique_letters + BUFFER
+		self.vocab_size = self.char_offset + 26 + 1

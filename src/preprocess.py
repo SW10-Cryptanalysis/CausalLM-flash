@@ -1,0 +1,115 @@
+import json
+import argparse
+import logging
+from datasets import Dataset, Features, Value
+from classes import Config
+from easy_logging import EasyFormatter
+from typing import Any, Generator
+from pathlib import Path
+
+handler = logging.StreamHandler()
+handler.setFormatter(EasyFormatter())
+logger = logging.getLogger("model.py")
+logger.addHandler(handler)
+
+features = Features(
+	{
+		"ciphertext": Value("string"),
+		"plaintext": Value("string"),
+		"ciphertext_with_boundaries": Value("string"),
+		"plaintext_with_boundaries": Value("string"),
+	},
+)
+
+
+class RawToArrowConverter:
+	"""Encapsulates the tokenization logic for testing and execution."""
+
+	def __init__(self, config: Config) -> None:
+		"""Initialize the converter with model configuration.
+
+		Args:
+			config (Config): The configuration object containing token offsets.
+
+		"""
+		self.cfg = config
+		self.t_key = "plaintext_with_boundaries" if config.use_spaces else "plaintext"
+		self.c_key = "ciphertext_with_boundaries" if config.use_spaces else "ciphertext"
+
+	def tokenize_fn(self, example: dict[str, Any]) -> dict[str, Any]:
+		"""Tokenize a single example from the dataset.
+
+		Args:
+			example (Dict[str, Any]): A raw dictionary of text and cipher strings.
+
+		Returns:
+			Dict[str, Any]: A dictionary containing 'input_ids' and 'labels'.
+
+		"""
+		# Cipher mapping (splitting and handling _)
+		raw_cipher = example[self.c_key].split()
+		cipher_ids = [
+			self.cfg.space_token_id if x == "_" else int(x) for x in raw_cipher
+		]
+
+		# Plaintext mapping (char by char)
+		plain_ids = []
+		for char in example[self.t_key]:
+			if char == "_":
+				plain_ids.append(self.cfg.space_token_id)
+			elif "a" <= char <= "z":
+				plain_ids.append(ord(char) - ord("a") + self.cfg.char_offset)
+
+		input_ids = (
+			[self.cfg.bos_token_id]
+			+ cipher_ids
+			+ [self.cfg.sep_token_id]
+			+ plain_ids
+			+ [self.cfg.eos_token_id]
+		)[: self.cfg.max_context]
+		return {"input_ids": input_ids, "labels": input_ids}
+
+
+def preprocess_data() -> None:
+	"""Execute the entry point for preprocessing raw JSON data into Arrow format.
+
+	Parses CLI arguments, loads the configuration, and iterates through
+	data splits to save tokenized datasets to disk.
+	"""
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--spaces", action="store_true")
+	args = parser.parse_args()
+
+	cfg = Config()
+	cfg.use_spaces = args.spaces
+	cfg.load_homophones()
+
+	# Initialize the converter
+	converter = RawToArrowConverter(cfg)
+
+	# Load Raw JSONs
+	for split in ["Training", "Test", "Validation"]:
+		logger.info("Converting %s (Spaces: %s)...", split, cfg.use_spaces)
+		split_path = cfg.data_dir / split
+
+		def gen(path: Path = split_path) -> Generator[dict[str, Any], None, None]:
+			for file_path in path.iterdir():
+				if file_path.suffix == ".json":
+					with open(file_path) as f:
+						yield json.load(f)
+
+		raw_ds = Dataset.from_generator(gen, features=features)
+
+		tokenized_ds = raw_ds.map(
+			converter.tokenize_fn,
+			num_proc=8,
+			remove_columns=raw_ds.column_names,
+		)
+
+		save_path = cfg.tokenized_dir / split
+		tokenized_ds.save_to_disk(str(save_path))
+		logger.info("Saved to %s", save_path)
+
+
+if __name__ == "__main__":
+	preprocess_data()
