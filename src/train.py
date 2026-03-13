@@ -51,7 +51,7 @@ def train() -> None:
 		fp16=False,
 		bf16=True,
 		tf32=True,
-		dataloader_num_workers=4,
+		dataloader_num_workers=8,
 		dataloader_pin_memory=True,
 		ddp_find_unused_parameters=False,
 		# Checkpointing
