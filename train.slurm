@@ -13,6 +13,28 @@ set -e
 PROJECT_DIR=/ceph/project/SW10-CausalLM/Llama-xFormers
 cd $PROJECT_DIR
 
+# ==============================================================================
+# DYNAMIC AUTO-CHAINING LOGIC
+# ==============================================================================
+# 1. Determine which subfolder to check based on the --spaces flag
+IF_SPACES="normal"
+for arg in "$@"; do
+    if [ "$arg" == "--spaces" ]; then
+        IF_SPACES="spaces"
+    fi
+done
+
+# 2. Break the chain if the specific final model is found
+if [ -d "outputs/${IF_SPACES}/final_model" ]; then
+    echo "Success: 'outputs/${IF_SPACES}/final_model' found. Training is completely finished."
+    echo "Breaking the chain."
+    exit 0
+fi
+
+echo "Dynamically queuing the next 12-hour continuation job with arguments: $@"
+sbatch --dependency=afterany:$SLURM_JOB_ID $0 "$@"
+# ==============================================================================
+
 mkdir -p logs
 
 export HF_HUB_ENABLE_HF_TRANSFER=1
