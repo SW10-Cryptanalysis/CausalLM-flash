@@ -103,18 +103,13 @@ def evaluate() -> None:
 				eos_token_id=config.eos_token_id,
 			)
 
-		end_time = time.perf_counter()
-		generation_time = end_time - start_time
-		# --- TIMER END ---
+		generation_time = time.perf_counter() - start_time
 
-		# Process Prediction
-		generated_part = output_ids[0][len(input_ids) :]
-		pred_plain = decode_prediction(generated_part.tolist())
+		pred_ids = output_ids[0][len(input_ids) :].tolist()
+		pred_plain = decode_prediction(pred_ids, config)
 
-		# Calculate SER
 		dist = Levenshtein.distance(true_plain, pred_plain)
 		ser = dist / len(true_plain) if len(true_plain) > 0 else 0
-
 		total_ser += ser
 		processed_count += 1
 
@@ -122,7 +117,7 @@ def evaluate() -> None:
 		result_entry = {
 			"index": i,
 			"difficulty": int(difficulty),
-			"ciphertext": decode_ciphertext(raw_cipher_ids),
+			"ciphertext": decode_ciphertext(raw_cipher_ids, config),
 			"plaintext": true_plain,
 			"predicted_plaintext": pred_plain,
 			"ser": float(ser),
