@@ -68,7 +68,7 @@ class Config:
 
 	@property
 	def final_output_dir(self) -> Path:
-		"""Dynamic output dir to either outputs/spaces/ or outputs/normal/"""
+		"""Dynamic output dir to either outputs/spaces/ or outputs/normal/."""
 		suffix = "spaces" if self.use_spaces else "normal"
 		return self.output_dir / suffix
 
