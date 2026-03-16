@@ -18,6 +18,7 @@ features = Features(
 		"plaintext": Value("string"),
 		"ciphertext_with_boundaries": Value("string"),
 		"plaintext_with_boundaries": Value("string"),
+		"difficulty": Value("float32"),
 	},
 )
 
@@ -67,7 +68,12 @@ class RawToArrowConverter:
 			+ plain_ids
 			+ [self.cfg.eos_token_id]
 		)[: self.cfg.max_context]
-		return {"input_ids": input_ids, "labels": input_ids}
+		return {
+			"input_ids": input_ids,
+			"labels": input_ids,
+			"raw_plaintext": example[self.t_key],
+			"difficulty": example["difficulty"],
+		}
 
 
 def preprocess_data() -> None:
@@ -103,7 +109,13 @@ def preprocess_data() -> None:
 		tokenized_ds = raw_ds.map(
 			converter.tokenize_fn,
 			num_proc=8,
-			remove_columns=raw_ds.column_names,
+			remove_columns=[
+				"ciphertext",
+				"ciphertext_with_boundaries",
+				"plaintext",
+				"plaintext_with_boundaries",
+				"difficulty",
+			],
 		)
 
 		save_path = cfg.tokenized_dir / split
