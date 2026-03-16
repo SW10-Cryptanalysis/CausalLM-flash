@@ -11,6 +11,7 @@ def sample_payload():
 		"plaintext": "ab",
 		"ciphertext_with_boundaries": "1 _ 2",
 		"plaintext_with_boundaries": "a _ b",
+		"difficulty": 20,
 	}
 
 

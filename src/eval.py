@@ -121,7 +121,7 @@ def evaluate() -> None:
 		# Incremental Save
 		result_entry = {
 			"index": i,
-			"difficulty": float(difficulty),
+			"difficulty": int(difficulty),
 			"ciphertext": decode_ciphertext(raw_cipher_ids),
 			"plaintext": true_plain,
 			"predicted_plaintext": pred_plain,

@@ -78,6 +78,7 @@ class TestCipherPlainData:
 			"plaintext": "ab",
 			"ciphertext_with_boundaries": "1 _ 2",
 			"plaintext_with_boundaries": "a _ b",
+			"difficulty": 20,
 		}
 		converter = RawToArrowConverter(cfg)
 		result = converter.tokenize_fn(example)
