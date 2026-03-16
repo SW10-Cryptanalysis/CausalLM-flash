@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=convert_data
-#SBATCH --output=convert_%j.out
-#SBATCH --error=convert_%j.err
+#SBATCH --output=logs/convert_%j.out
+#SBATCH --error=logs/convert_%j.err
 #SBATCH --time=12:00:00
 #SBATCH --partition=l4      # Use a CPU partition (change 'cpu' if AAU uses a different name for CPU nodes)
 #SBATCH --cpus-per-task=32   # Grab 32 cores to rip through the files
