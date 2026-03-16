@@ -12,7 +12,6 @@ TOTAL_SEQ = TEXT_LEN * 2
 BUFFER = 8
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
-# DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
 DATA_DIR = Path("/ceph/project/SW10-CausalLM/Ciphers")
 
 HOMOPHONE_FILE = "metadata.json"
@@ -66,6 +65,12 @@ class Config:
 	att_heads: int = 6
 	kv_heads: int = 2
 	rope_theta: float = 1_000_000.0
+
+	@property
+	def final_output_dir(self) -> Path:
+		"""Dynamic output dir to either outputs/spaces/ or outputs/normal/"""
+		suffix = "spaces" if self.use_spaces else "normal"
+		return self.output_dir / suffix
 
 	# TOKEN PROPERTIES
 	@property

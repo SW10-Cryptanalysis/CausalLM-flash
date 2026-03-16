@@ -27,13 +27,17 @@ def train() -> None:
 	config.use_spaces = cmd_args.spaces
 	config.load_homophones()
 
+	# Path handling
+	current_output_dir = config.final_output_dir
+	current_output_dir.mkdir(parents=True, exist_ok=True)
+
 	model = get_model(config)
 
 	train_dataset = CipherPlainData(config, split="Training")
 	eval_dataset = CipherPlainData(config, split="Validation")
 
 	args = TrainingArguments(
-		output_dir=str(config.output_dir),
+		output_dir=str(current_output_dir),
 		num_train_epochs=config.epochs,
 		per_device_train_batch_size=config.batch_size,
 		gradient_accumulation_steps=config.grad_accum,
@@ -71,21 +75,16 @@ def train() -> None:
 	)
 
 	checkpoint = None
-	if os.path.isdir(config.output_dir) and any(config.output_dir.iterdir()):
+	if os.path.isdir(current_output_dir) and any(current_output_dir.iterdir()):
 		checkpoint = True
 		logger.info(
-			f"Checkpoint detected in {config.output_dir} - Resuming training...",
+			f"Checkpoint detected in {current_output_dir} - Resuming training...",
 		)
 	else:
 		logger.info(f"Training on {torch.cuda.get_device_name(0)}...")
 
 	trainer.train(resume_from_checkpoint=checkpoint)
-
-	if config.use_spaces:
-		save_dest = f"{config.output_dir}/model_with_spaces"
-	else:
-		save_dest = f"{config.output_dir}/model"
-
+	save_dest = f"{current_output_dir}/model"
 	trainer.save_model(save_dest)
 
 
