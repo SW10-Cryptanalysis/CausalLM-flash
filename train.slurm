@@ -39,7 +39,7 @@ mkdir -p logs
 
 export HF_HUB_ENABLE_HF_TRANSFER=1
 
-export CUDA_VISIBLE_DEVICES=$(echo $CUDA_VISIBLE_DEVICES | awk -F',' '{print $1","$2","$3","$4}')
+export CUDA_VISIBLE_DEVICES=$(echo $CUDA_VISIBLE_DEVICES)
 
 nvidia-smi | tee -a logs/train_live_${SLURM_JOB_ID}.log
 
@@ -51,10 +51,10 @@ export NCCL_DEBUG=INFO
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
 # Ensure environment is synced
-uv pip install -e .
+uv pip install --python 3.12 -e .
 
 # Mistral relies heavily on FA2 for sliding window attention.
-uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
+uv pip install --python 3.12 https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
 
 # Ensure master_port is randomized slightly to prevent port collision on shared nodes
 MASTER_PORT=$((10000 + $RANDOM % 20000))

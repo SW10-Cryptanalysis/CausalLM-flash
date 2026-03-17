@@ -21,4 +21,4 @@ Remember to adjust this parameter when changing cipher lengths... A good rule of
 
 | PAD | Cipher start | Cipher end | SEP | SPACE | BOS | EOS | a..   | ..z    |
 |-----|--------------|------------|-----|-------|-----|-----|-------|--------|
-| 0   | 1..          | ..N        | N+1 | N+2   | N+3 | N+4 | N+5.. | ..N+31 |
+| 0   | 1..          | ..N        | N+1 | N+2   | N+3 | N+4 | N+5.. | ..N+30 |

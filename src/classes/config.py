@@ -5,10 +5,10 @@ import logging
 from easy_logging import EasyFormatter
 from pathlib import Path
 
-TEXT_LEN = 10_000
+MAX_TEXT_LEN = 10_000
 UNIQUE_HOMOPHONE_COUNT = 500
 UNIQUE_LETTER_COUNT = 26
-TOTAL_SEQ = TEXT_LEN * 2
+TOTAL_SEQ = MAX_TEXT_LEN * 2
 BUFFER = 8
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
@@ -58,8 +58,8 @@ class Config:
 	# Vocab needs to be larger than unique homophone count + unique letter count
 	# + buffer (start/end/padding, etc) and maybe spacing "_"
 	vocab_size: int = UNIQUE_HOMOPHONE_COUNT + UNIQUE_LETTER_COUNT + BUFFER
-	# Input is ciphertext + sep + plaintext
-	max_context: int = TOTAL_SEQ + 1
+	# Input is BOS + ciphertext + SEP + plaintext + EOS
+	max_context: int = TOTAL_SEQ + 3
 	dims: int = 384
 	layers: int = 16
 	att_heads: int = 6

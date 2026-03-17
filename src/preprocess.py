@@ -61,16 +61,36 @@ class RawToArrowConverter:
 			elif "a" <= char <= "z":
 				plain_ids.append(ord(char) - ord("a") + self.cfg.char_offset)
 
+		# BOS, EOS, SEP
+		special_tokens = [
+			self.cfg.bos_token_id,
+			self.cfg.sep_token_id,
+			self.cfg.eos_token_id,
+		]
+		# max allowed length, but with room for special tokens
+		max_content_budget = self.cfg.max_context - len(special_tokens)
+		total_content_len = len(cipher_ids) + len(plain_ids)
+
+		if total_content_len > max_content_budget:
+			# cut equally if spaces makes the sequence longer than allowed
+			half_budget = max_content_budget // 2
+
+			cipher_ids = cipher_ids[:half_budget]
+			plain_ids = plain_ids[:(max_content_budget - len(cipher_ids))]
+
 		input_ids = (
 			[self.cfg.bos_token_id]
 			+ cipher_ids
 			+ [self.cfg.sep_token_id]
 			+ plain_ids
 			+ [self.cfg.eos_token_id]
-		)[: self.cfg.max_context]
+		)
+
+		labels = list(input_ids)
+
 		return {
 			"input_ids": input_ids,
-			"labels": input_ids,
+			"labels": labels,
 			"raw_plaintext": example[self.t_key],
 			"difficulty": example["difficulty"],
 		}
