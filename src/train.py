@@ -1,10 +1,10 @@
 import os
-import torch
 import argparse
 from model import get_model
 from transformers import Trainer, TrainingArguments
 import logging
 from easy_logging import EasyFormatter
+from pathlib import Path
 
 from classes import Config, CipherPlainData
 
@@ -15,6 +15,19 @@ handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())
 logger = logging.getLogger("model.py")
 logger.addHandler(handler)
+
+def contains_checkpoint(output_dir: Path) -> bool:
+	"""Check output dir for checkpoints."""
+	if not output_dir.exists():
+		return False
+
+	for d in output_dir.iterdir():
+		if d.is_dir() and d.name.startswith("checkpoint-") and any(d.iterdir()):
+			logger.info("Found valid checkpoint: %s. Resuming...", d.name)
+			return True
+
+	logger.info("No checkpoints found. Starting training from scratch.")
+	return False
 
 
 def train() -> None:
@@ -74,16 +87,9 @@ def train() -> None:
 		eval_dataset=eval_dataset,
 	)
 
-	checkpoint = None
-	if os.path.isdir(current_output_dir) and any(current_output_dir.iterdir()):
-		checkpoint = True
-		logger.info(
-			f"Checkpoint detected in {current_output_dir} - Resuming training...",
-		)
-	else:
-		logger.info(f"Training on {torch.cuda.get_device_name(0)}...")
+	checkpoint_exists = contains_checkpoint(current_output_dir)
 
-	trainer.train(resume_from_checkpoint=checkpoint)
+	trainer.train(resume_from_checkpoint=checkpoint_exists)
 	save_dest = f"{current_output_dir}/model"
 	trainer.save_model(save_dest)
 
