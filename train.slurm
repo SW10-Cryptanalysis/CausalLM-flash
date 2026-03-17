@@ -50,10 +50,9 @@ export OMP_NUM_THREADS=8
 export NCCL_DEBUG=INFO
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
-# Ensure environment is synced
+
 uv pip install --python 3.12 -e .
 
-# Mistral relies heavily on FA2 for sliding window attention.
 uv pip install --python 3.12 https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
 
 # Ensure master_port is randomized slightly to prevent port collision on shared nodes
