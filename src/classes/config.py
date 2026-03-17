@@ -12,7 +12,7 @@ TOTAL_SEQ = MAX_TEXT_LEN * 2
 BUFFER = 8
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
-DATA_DIR = Path("/ceph/project/SW10-CausalLM/Ciphers")
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
 
 HOMOPHONE_FILE = "metadata.json"
 
