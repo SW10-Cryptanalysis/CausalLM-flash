@@ -1,158 +1,123 @@
 import pytest
+import torch
+from datasets import Dataset as ArrowDataset
 from classes import CipherPlainData, Config
-import os
-import zipfile
-from pathlib import Path
-import json
+from unittest.mock import MagicMock
 
+class RawToArrowConverter:
+	def __init__(self, config: Config) -> None:
+		self.cfg = config
+		self.t_key = "plaintext_with_boundaries" if config.use_spaces else "plaintext"
+		self.c_key = "ciphertext_with_boundaries" if config.use_spaces else "ciphertext"
 
-@pytest.fixture
-def real_data_config(tmp_path):
-	"""
-	Reads static JSON files from test/test_data, zips them into a temporary
-	directory, and returns a Config object pointed at that directory.
-	"""
-	test_data_dir = Path(__file__).parent.parent / "ciphers"
-	zip_path = tmp_path / "ciphers.zip"
+	def tokenize_fn(self, example: dict) -> dict:
+		raw_cipher = example[self.c_key].split()
+		cipher_ids = [
+			self.cfg.space_token_id if x == "_" else int(x) for x in raw_cipher
+		]
 
-	with zipfile.ZipFile(zip_path, "w") as z:
-		for json_file in test_data_dir.glob("*.json"):
-			z.write(json_file, arcname=json_file.name)
+		plain_ids = []
+		for char in example[self.t_key]:
+			if char == "_":
+				plain_ids.append(self.cfg.space_token_id)
+			elif "a" <= char <= "z":
+				plain_ids.append(ord(char) - ord("a") + self.cfg.char_offset)
 
-	return Config(data_dir=tmp_path)
+		special_tokens_count = 3
+		max_content_budget = self.cfg.max_context - special_tokens_count
+		total_content_len = len(cipher_ids) + len(plain_ids)
 
+		if total_content_len > max_content_budget:
+			budget_per_side = max_content_budget // 2
+			cipher_ids = cipher_ids[:budget_per_side]
+			plain_ids = plain_ids[:(max_content_budget - len(cipher_ids))]
 
-@pytest.fixture
-def cipher():
-	"""Fixture for a cipher."""
-	return {
-		"plaintext": "test",
-		"length": 4,
-		"num_symbols": 4,
-		"difficulty": 1,
-		"key": {
-			"e": [2],
-			"s": [3],
-			"t": [1],
-		},
-		"source_id": "12345",
-		"source_name": "test",
-		"ciphertext": "1 2 3 1",
-	}
-
-
-def write_cipher(data_dir, cipher):
-	zip1_path = data_dir / "batch_01.zip"
-	with zipfile.ZipFile(zip1_path, "w") as z:
-		z.writestr("cipher_a.json", json.dumps(cipher))
-
-
-@pytest.fixture
-def cipher_illegal_char(tmp_path, cipher):
-	"""Fixture for a cipher with an illegal character."""
-	data_dir = tmp_path / "data"
-	data_dir.mkdir()
-
-	cipher["ciphertext"] = "1 2 3 1 4"
-	cipher["key"]["æ"] = [4]
-	cipher["plaintext"] = "testæ"
-
-	write_cipher(data_dir, cipher)
-
-	return Config(data_dir=data_dir)
-
-
-@pytest.fixture
-def cipher_invalid_json(tmp_path, cipher):
-	"""Fixture for a cipher with invalid JSON (missing key)."""
-	data_dir = tmp_path / "data"
-	data_dir.mkdir()
-
-	del cipher["plaintext"]
-
-	write_cipher(data_dir, cipher)
-
-	return Config(data_dir=data_dir)
-
-
-class TestCipherPlainDataInit:
-	def test_init(self):
-		data = CipherPlainData(Config())
-		assert data.file_refs == []
-		assert data.handles == {}
-		assert data.sep_token == data.config.unique_homophones + 1
-		assert data.char_offset == data.sep_token + 1
-
-	def test_init_with_file_refs(self, tmp_path):
-		"""Test that the CipherPlainData class can be initialized with file refs."""
-		data_dir = tmp_path / "data"
-		data_dir.mkdir()
-
-		zip1_path = data_dir / "batch_01.zip"
-		with zipfile.ZipFile(zip1_path, "w") as z:
-			z.writestr("cipher_a.json", '{"dummy": "data"}')
-			z.writestr("cipher_b.json", '{"dummy": "data"}')
-			z.writestr("ignore_me.txt", "This should not be indexed")
-
-		zip2_path = data_dir / "batch_02.zip"
-		with zipfile.ZipFile(zip2_path, "w") as z:
-			z.writestr("nested_folder/cipher_c.json", '{"dummy": "data"}')
-
-		(data_dir / "not_a_zip.tar.gz").write_text("fake archive")
-
-		dataset = CipherPlainData(Config(data_dir=data_dir))
-
-		assert len(dataset.file_refs) == 3
-		assert len(dataset) == 3  # Test length simultaneously
-
-		actual_refs = {(os.path.basename(zp), fname) for zp, fname in dataset.file_refs}
-
-		expected_refs = {
-			("batch_01.zip", "cipher_a.json"),
-			("batch_01.zip", "cipher_b.json"),
-			("batch_02.zip", "nested_folder/cipher_c.json"),
+		input_ids = (
+			[self.cfg.bos_token_id] + cipher_ids +
+			[self.cfg.sep_token_id] + plain_ids +
+			[self.cfg.eos_token_id]
+		)
+		return {
+			"input_ids": input_ids,
+			"labels": list(input_ids), # Joint distribution training
+			"difficulty": example["difficulty"]
 		}
 
-		assert actual_refs == expected_refs
 
-	def test_length_with_empty_zip(self, tmp_path):
-		"""Test that the length of the CipherPlainData class is correct when a zip is empty."""
-		data_dir = tmp_path / "data"
-		data_dir.mkdir()
+@pytest.fixture
+def mock_arrow_dir(tmp_path):
+	"""Creates a fake Arrow dataset structure on disk."""
+	tokenized_path = tmp_path / "tokenized_normal" / "Training"
+	tokenized_path.mkdir(parents=True)
 
-		zip1_path = data_dir / "batch_01.zip"
-		with zipfile.ZipFile(zip1_path, "w") as z:
-			z.writestr("not_a_cipher.txt", "Doesn't matter")
+	dummy_data = {
+		"input_ids": [[10, 20, 501, 502, 503]],
+		"labels": [[10, 20, 501, 502, 503]],
+		"difficulty": [10]
+	}
+	ArrowDataset.from_dict(dummy_data).save_to_disk(str(tokenized_path))
+	return tmp_path
 
-		dataset = CipherPlainData(Config(data_dir=data_dir))
 
-		assert len(dataset) == 0
+class TestCipherPlainData:
+	def test_init_and_len(self, mock_arrow_dir):
+		cfg = Config(data_dir=mock_arrow_dir)
+		ds = CipherPlainData(cfg, split="Training")
+		assert len(ds) == 1
 
+	def test_getitem_padding_and_masking(self, mock_arrow_dir):
+		cfg = Config(data_dir=mock_arrow_dir)
+		cfg.max_context = 8
+		ds = CipherPlainData(cfg, split="Training")
 
-class TestCipherPlainDataGetItem:
-	def test_getitem(self, real_data_config):
-		"""Test that the CipherPlainData class can be indexed."""
-		dataset = CipherPlainData(real_data_config)
+		item = ds[0]
+		# input_ids: [10, 20, 501, 502, 503, 0, 0, 0]
+		# labels: [10, 20, 501, 502, 503, -100, -100, -100]
+		assert item["input_ids"].tolist() == [10, 20, 501, 502, 503, 0, 0, 0]
+		assert item["labels"].tolist() == [10, 20, 501, 502, 503, -100, -100, -100]
 
-		item = dataset[0]
+	def test_joint_distribution_labels(self, mock_arrow_dir):
+		"""Verify that labels match input_ids for joint loss."""
+		cfg = Config(data_dir=mock_arrow_dir)
+		ds = CipherPlainData(cfg, split="Training")
+		item = ds[0]
 
-		assert item["input_ids"].shape == (Config().max_context,)
-		assert item["labels"].shape == (Config().max_context,)
+		input_ids = item["input_ids"]
+		labels = item["labels"]
 
-	def test_getitem_unexpected_char(self, cipher_illegal_char):
-		"""Test that the CipherPlainData class raises an error when an
-		unexpected character is encountered."""
-		dataset = CipherPlainData(cipher_illegal_char)
+		mask = input_ids != 0
+		assert torch.equal(input_ids[mask], labels[mask])
 
-		with pytest.raises(ValueError) as e:
-			dataset[0]
-		assert "Unexpected char" in str(e.value)
+	from unittest.mock import MagicMock
 
-	def test_getitem_invalid_json(self, cipher_invalid_json):
-		"""Test that the CipherPlainData class raises an error when an
-		invalid JSON file is encountered."""
-		dataset = CipherPlainData(cipher_invalid_json)
+	def test_sequence_order(self):
+		"""Verify the [BOS] -> [Cipher] -> [SEP] -> [Plain] -> [EOS] structure."""
+		cfg = MagicMock()
 
-		with pytest.raises(ValueError) as e:
-			dataset[0]
-		assert "Item is missing key: plaintext" in str(e.value)
+		# Define the IDs as standard attributes on the mock
+		cfg.bos_token_id = 1
+		cfg.sep_token_id = 2
+		cfg.eos_token_id = 3
+		cfg.space_token_id = 4
+		cfg.char_offset = 10
+		cfg.max_context = 100
+		cfg.use_spaces = False
+
+		example = {
+			"ciphertext": "5 6",
+			"plaintext": "xy",
+			"difficulty": 5
+		}
+
+		# Initialize the converter with the mock
+		converter = RawToArrowConverter(cfg)
+		result = converter.tokenize_fn(example)
+		ids = result["input_ids"]
+
+		# Expected: [BOS], [5], [6], [SEP], [x], [y], [EOS]
+		# 'x' -> ord('x') - ord('a') + 10 = 23 + 10 = 33
+		# 'y' -> ord('y') - ord('a') + 10 = 24 + 10 = 34
+		expected_ids = [1, 5, 6, 2, 33, 34, 3]
+
+		assert ids == expected_ids
+		assert result["labels"] == ids
