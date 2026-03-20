@@ -34,6 +34,7 @@ def decode_ciphertext(ids: list[int], config: Config) -> str:
 	excluded = {config.bos_token_id, config.sep_token_id}
 	return " ".join(str(idx) for idx in ids if idx not in excluded)
 
+
 def evaluate() -> None:
 	"""Run evaluation on the test set and log results incrementally.
 
@@ -88,7 +89,7 @@ def evaluate() -> None:
 			continue
 
 		input_tensor = torch.tensor([input_ids]).to(device)
-		dynamic_max = len(true_plain) + 20
+		target_length = len(raw_cipher_ids)
 
 		# --- TIMER START ---
 		start_time = time.perf_counter()
@@ -96,7 +97,8 @@ def evaluate() -> None:
 		with torch.no_grad():
 			output_ids = model.generate(
 				input_tensor,
-				max_new_tokens=dynamic_max,
+				max_new_tokens=target_length,
+				min_new_tokens=target_length,
 				do_sample=False,
 				use_cache=True,
 				pad_token_id=0,
@@ -128,11 +130,14 @@ def evaluate() -> None:
 			f.write(json.dumps(result_entry) + "\n")
 
 		if i % 50 == 0:
-			msg = f"[{i+1}/{num_samples}] SER: {ser:.4f} | Time: {generation_time:.2f}s"
+			msg = (
+				f"[{i + 1}/{num_samples}] SER: {ser:.4f} | Time: {generation_time:.2f}s"
+			)
 			logger.info(msg)
 
 	if processed_count > 0:
 		logger.info(f"DONE. Avg SER: {total_ser / processed_count:.4f}")
+
 
 if __name__ == "__main__":
 	evaluate()
