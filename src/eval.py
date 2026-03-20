@@ -89,9 +89,7 @@ def evaluate() -> None:
 			continue
 
 		input_tensor = torch.tensor([input_ids]).to(device)
-
-		# length + EOS token
-		target_length = len(raw_cipher_ids) + 1
+		target_length = len(raw_cipher_ids)
 
 		# --- TIMER START ---
 		start_time = time.perf_counter()
