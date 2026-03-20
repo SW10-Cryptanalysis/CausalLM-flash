@@ -75,7 +75,7 @@ def evaluate() -> None:
 		item = test_ds[i]
 		all_ids = item["input_ids"]
 		true_plain = item["raw_plaintext"]
-		difficulty = item["difficulty"]
+		redundancy = item["redundancy"]
 
 		try:
 			sep_idx = all_ids.index(config.sep_token_id)
@@ -116,7 +116,7 @@ def evaluate() -> None:
 		# Incremental Save
 		result_entry = {
 			"index": i,
-			"difficulty": int(difficulty),
+			"redundancy": int(redundancy),
 			"ciphertext": decode_ciphertext(raw_cipher_ids, config),
 			"plaintext": true_plain,
 			"predicted_plaintext": pred_plain,

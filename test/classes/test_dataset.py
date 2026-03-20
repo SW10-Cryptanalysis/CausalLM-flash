@@ -40,7 +40,7 @@ class RawToArrowConverter:
 		return {
 			"input_ids": input_ids,
 			"labels": list(input_ids), # Joint distribution training
-			"difficulty": example["difficulty"]
+			"redundancy": example["redundancy"]
 		}
 
 
@@ -53,7 +53,7 @@ def mock_arrow_dir(tmp_path):
 	dummy_data = {
 		"input_ids": [[10, 20, 501, 502, 503]],
 		"labels": [[10, 20, 501, 502, 503]],
-		"difficulty": [10]
+		"redundancy": [10]
 	}
 	ArrowDataset.from_dict(dummy_data).save_to_disk(str(tokenized_path))
 	return tmp_path
@@ -106,7 +106,7 @@ class TestCipherPlainData:
 		example = {
 			"ciphertext": "5 6",
 			"plaintext": "xy",
-			"difficulty": 5
+			"redundancy": 5
 		}
 
 		# Initialize the converter with the mock
