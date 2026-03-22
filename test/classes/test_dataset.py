@@ -71,10 +71,8 @@ class TestCipherPlainData:
 		ds = CipherPlainData(cfg, split="Training")
 
 		item = ds[0]
-		# input_ids: [10, 20, 501, 502, 503, 0, 0, 0]
-		# labels: [10, 20, 501, 502, 503, -100, -100, -100]
-		assert item["input_ids"].tolist() == [10, 20, 501, 502, 503, 0, 0, 0]
-		assert item["labels"].tolist() == [10, 20, 501, 502, 503, -100, -100, -100]
+		assert item["input_ids"] == [10, 20, 501, 502, 503]
+		assert item["labels"] == [10, 20, 501, 502, 503]
 
 	def test_joint_distribution_labels(self, mock_arrow_dir):
 		"""Verify that labels match input_ids for joint loss."""
@@ -85,8 +83,7 @@ class TestCipherPlainData:
 		input_ids = item["input_ids"]
 		labels = item["labels"]
 
-		mask = input_ids != 0
-		assert torch.equal(input_ids[mask], labels[mask])
+		assert item["input_ids"] == item["labels"]
 
 	from unittest.mock import MagicMock
 
