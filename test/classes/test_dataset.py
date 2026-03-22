@@ -1,5 +1,4 @@
 import pytest
-import torch
 from datasets import Dataset as ArrowDataset
 from classes import CipherPlainData, Config
 from unittest.mock import MagicMock
@@ -80,8 +79,8 @@ class TestCipherPlainData:
 		ds = CipherPlainData(cfg, split="Training")
 		item = ds[0]
 
-		input_ids = item["input_ids"]
-		labels = item["labels"]
+		item["input_ids"]
+		item["labels"]
 
 		assert item["input_ids"] == item["labels"]
 
