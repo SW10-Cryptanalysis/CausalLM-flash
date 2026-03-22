@@ -31,7 +31,7 @@ def get_model(config: Config) -> LlamaForCausalLM:
 		rope_theta=config.rope_theta,
 		torch_dtype=torch.bfloat16,
 
-		pad_token_id=0,
+		pad_token_id=config.pad_token_id,
 		bos_token_id=config.bos_token_id,
 		eos_token_id=config.eos_token_id,
 

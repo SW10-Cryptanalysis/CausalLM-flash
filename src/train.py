@@ -1,10 +1,12 @@
 import os
+import torch
 import argparse
 from model import get_model
 from transformers import Trainer, TrainingArguments
 import logging
 from easy_logging import EasyFormatter
 from pathlib import Path
+from typing import Any
 
 from classes import Config, CipherPlainData
 
@@ -15,6 +17,45 @@ handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())
 logger = logging.getLogger("model.py")
 logger.addHandler(handler)
+
+
+class PadCollator:
+	"""Dynamically pads ciphers to longest cipher in the batch."""
+
+	def __init__(self, pad_token_id: int = 0) -> None:
+		"""Initialize the collator with a padding token ID."""
+		self.pad_token_id = pad_token_id
+
+
+	def __call__(self, features: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
+		"""Pad the batch to the maximum sequence length found in the features."""
+		max_len = max(len(f["input_ids"]) for f in features)
+
+		batch_input_ids = []
+		batch_labels = []
+		batch_att_mask = []
+
+		for f in features:
+			pad_length = max_len - len(f["input_ids"])
+
+			# Pad inputs with pad token
+			padded_inputs = f["input_ids"] + [self.pad_token_id] * pad_length
+
+			# Pad with -100 so PyTorch ignores padded parts during loss calc
+			padded_labels = f["labels"] + [-100] * pad_length
+
+			# 1 means pay attention, 0 means ignore
+			attention_mask = [1]*len(f["input_ids"]) + [0] * pad_length
+
+			batch_input_ids.append(padded_inputs)
+			batch_labels.append(padded_labels)
+			batch_att_mask.append(attention_mask)
+
+		return {
+			"input_ids": torch.tensor(batch_input_ids, dtype=torch.long),
+			"labels": torch.tensor(batch_labels, dtype=torch.long),
+			"attention_mask": torch.tensor(batch_att_mask, dtype=torch.long),
+		}
 
 def contains_checkpoint(output_dir: Path) -> bool:
 	"""Check output dir for checkpoints."""
@@ -80,11 +121,14 @@ def train() -> None:
 		optim="adamw_torch_fused",
 	)
 
+	collator = PadCollator(pad_token_id=config.pad_token_id)
+
 	trainer = Trainer(
 		model=model,
 		args=args,
 		train_dataset=train_dataset,
 		eval_dataset=eval_dataset,
+		data_collator=collator,
 	)
 
 	checkpoint_exists = contains_checkpoint(current_output_dir)

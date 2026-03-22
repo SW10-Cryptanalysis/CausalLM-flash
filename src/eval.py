@@ -49,8 +49,6 @@ def evaluate() -> None:
 	config.use_spaces = cmd_args.spaces
 	config.load_homophones()
 
-	device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 	# Load Model
 	logger.info(f"Loading model from {cmd_args.model_path}...")
 	model = LlamaForCausalLM.from_pretrained(
@@ -88,7 +86,7 @@ def evaluate() -> None:
 			logger.warning(f"Sample {i} missing SEP token. Skipping.")
 			continue
 
-		input_tensor = torch.tensor([input_ids]).to(device)
+		input_tensor = torch.tensor([input_ids]).to(model.device)
 		target_length = len(raw_cipher_ids)
 
 		# --- TIMER START ---
@@ -97,6 +95,7 @@ def evaluate() -> None:
 		with torch.no_grad():
 			output_ids = model.generate(
 				input_tensor,
+				attention_mask=torch.ones_like(input_tensor),
 				max_new_tokens=target_length,
 				min_new_tokens=target_length,
 				do_sample=False,

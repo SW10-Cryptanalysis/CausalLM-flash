@@ -55,36 +55,10 @@ class CipherPlainData(Dataset):
 		return len(self.dataset)
 
 	def __getitem__(self, idx: int) -> CipherPlainDataItem:
-		"""Get the item at the given index.
-
-		Args:
-			idx (int): The index of the item to get.
-
-		Returns:
-			tuple: A tuple containing the zip path and file name of the item.
-
-		"""
+		"""Get the raw, unpadded item at the given index."""
 		item = self.dataset[idx]
 
-		# 1. Grab raw lists from Arrow
-		input_ids = item["input_ids"]
-		labels = item["labels"]
-
-		# 2. Convert to tensors AND PAD immediately
-		max_len = self.config.max_context
-
-		# Convert to tensor and pad/truncate in one go
-		input_tensor = torch.zeros(max_len, dtype=torch.long)
-		# -100 is ignored by Loss
-		label_tensor = torch.full((max_len,), -100, dtype=torch.long)
-
-		# Fill with actual data (up to max_len)
-		actual_len = min(len(input_ids), max_len)
-		input_tensor[:actual_len] = torch.tensor(input_ids[:actual_len])
-		label_tensor[:actual_len] = torch.tensor(labels[:actual_len])
-
 		return {
-			"input_ids": input_tensor,
-			"attention_mask": (input_tensor != 0).long(),
-			"labels": label_tensor,
-		}
+            "input_ids": item["input_ids"],
+            "labels": item["labels"],
+        }

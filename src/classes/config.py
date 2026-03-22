@@ -54,6 +54,7 @@ class Config:
 	# Default value is UNIQUE_HOMOPHONE_COUNT unless a HOMOPHONE_FILE exists
 	unique_homophones: int = UNIQUE_HOMOPHONE_COUNT
 	unique_letters: int = UNIQUE_LETTER_COUNT
+	pad_token_id: int = 0
 
 	# Vocab needs to be larger than unique homophone count + unique letter count
 	# + buffer (start/end/padding, etc) and maybe spacing "_"
