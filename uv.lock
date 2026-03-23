@@ -20,7 +20,8 @@ name = "accelerate"
 version = "1.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "huggingface-hub", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "huggingface-hub", version = "1.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
     { name = "packaging", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
@@ -176,7 +177,8 @@ dependencies = [
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.2.2", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "torch", version = "2.9.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "transformers", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "transformers", version = "4.57.6", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "transformers", version = "5.2.0", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 
 [package.dev-dependencies]
@@ -195,7 +197,8 @@ requires-dist = [
     { name = "numpy", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'", specifier = "<2.0.0" },
     { name = "torch", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'", specifier = "==2.9.0" },
     { name = "torch", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'", specifier = "<2.3.0" },
-    { name = "transformers", specifier = ">=5.2.0" },
+    { name = "transformers", marker = "platform_machine != 'x86_64' or sys_platform != 'darwin'", specifier = ">=5.2.0" },
+    { name = "transformers", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'", specifier = ">=4.40.0,<5.0.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -350,7 +353,8 @@ dependencies = [
     { name = "filelock", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
     { name = "fsspec", extra = ["http"], marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
     { name = "httpx", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "huggingface-hub", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "huggingface-hub", version = "1.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
     { name = "multiprocess", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
     { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
@@ -548,19 +552,48 @@ wheels = [
 
 [[package]]
 name = "huggingface-hub"
+version = "0.36.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
+    "python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
+]
+dependencies = [
+    { name = "filelock", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "fsspec", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "hf-xet", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "packaging", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "pyyaml", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "requests", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "tqdm", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "typing-extensions", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7c/b7/8cb61d2eece5fb05a83271da168186721c450eb74e3c31f7ef3169fa475b/huggingface_hub-0.36.2.tar.gz", hash = "sha256:1934304d2fb224f8afa3b87007d58501acfda9215b334eed53072dd5e815ff7a", size = 649782, upload-time = "2026-02-06T09:24:13.098Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a8/af/48ac8483240de756d2438c380746e7130d1c6f75802ef22f3c6d49982787/huggingface_hub-0.36.2-py3-none-any.whl", hash = "sha256:48f0c8eac16145dfce371e9d2d7772854a4f591bcb56c9cf548accf531d54270", size = 566395, upload-time = "2026-02-06T09:24:11.133Z" },
+]
+
+[[package]]
+name = "huggingface-hub"
 version = "1.4.1"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and sys_platform == 'linux'",
+    "python_full_version < '3.14' and sys_platform == 'linux'",
+    "python_full_version >= '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "python_full_version < '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+]
 dependencies = [
-    { name = "filelock", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "fsspec", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "hf-xet", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'AMD64' and sys_platform == 'linux') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'linux') or (platform_machine == 'arm64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
-    { name = "httpx", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "packaging", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "pyyaml", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "shellingham", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "tqdm", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "typer-slim", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "typing-extensions", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "filelock", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "fsspec", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "hf-xet", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'AMD64' and sys_platform == 'linux') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'amd64' and sys_platform == 'linux') or (platform_machine == 'arm64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "httpx", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "packaging", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "pyyaml", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "shellingham", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "tqdm", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "typer-slim", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "typing-extensions", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/c4/fc/eb9bc06130e8bbda6a616e1b80a7aa127681c448d6b49806f61db2670b61/huggingface_hub-1.4.1.tar.gz", hash = "sha256:b41131ec35e631e7383ab26d6146b8d8972abc8b6309b963b306fbcca87f5ed5", size = 642156, upload-time = "2026-02-06T09:20:03.013Z" }
 wheels = [
@@ -602,7 +635,7 @@ name = "markdown-it-py"
 version = "4.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "mdurl", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "mdurl", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5b/f5/4ec618ed16cc4f8fb3b701563655a69816155e79e24a17b651541804721d/markdown_it_py-4.0.0.tar.gz", hash = "sha256:cb0a2b4aa34f932c007117b194e945bd74e0ec24133ceb5bac59009cda1cb9f3", size = 73070, upload-time = "2025-08-11T12:57:52.854Z" }
 wheels = [
@@ -1395,8 +1428,8 @@ name = "rich"
 version = "14.3.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "markdown-it-py", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "pygments", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "markdown-it-py", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "pygments", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/74/99/a4cab2acbb884f80e558b0771e97e21e939c5dfb460f488d19df485e8298/rich-14.3.2.tar.gz", hash = "sha256:e712f11c1a562a11843306f5ed999475f09ac31ffb64281f73ab29ffdda8b3b8", size = 230143, upload-time = "2026-02-01T16:20:47.908Z" }
 wheels = [
@@ -1489,7 +1522,8 @@ name = "tokenizers"
 version = "0.22.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "huggingface-hub", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "huggingface-hub", version = "1.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/73/6f/f80cfef4a312e1fb34baf7d85c72d4411afde10978d4657f8cdd811d3ccc/tokenizers-0.22.2.tar.gz", hash = "sha256:473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917", size = 372115, upload-time = "2026-01-05T10:45:15.988Z" }
 wheels = [
@@ -1591,19 +1625,49 @@ wheels = [
 
 [[package]]
 name = "transformers"
+version = "4.57.6"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
+    "python_full_version < '3.14' and platform_machine == 'x86_64' and sys_platform == 'darwin'",
+]
+dependencies = [
+    { name = "filelock", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "huggingface-hub", version = "0.36.2", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "packaging", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "pyyaml", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "regex", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "requests", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "safetensors", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "tokenizers", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "tqdm", marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c4/35/67252acc1b929dc88b6602e8c4a982e64f31e733b804c14bc24b47da35e6/transformers-4.57.6.tar.gz", hash = "sha256:55e44126ece9dc0a291521b7e5492b572e6ef2766338a610b9ab5afbb70689d3", size = 10134912, upload-time = "2026-01-16T10:38:39.284Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/03/b8/e484ef633af3887baeeb4b6ad12743363af7cce68ae51e938e00aaa0529d/transformers-4.57.6-py3-none-any.whl", hash = "sha256:4c9e9de11333ddfe5114bc872c9f370509198acf0b87a832a0ab9458e2bd0550", size = 11993498, upload-time = "2026-01-16T10:38:31.289Z" },
+]
+
+[[package]]
+name = "transformers"
 version = "5.2.0"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and sys_platform == 'linux'",
+    "python_full_version < '3.14' and sys_platform == 'linux'",
+    "python_full_version >= '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+    "python_full_version < '3.14' and platform_machine == 'arm64' and sys_platform == 'darwin'",
+]
 dependencies = [
-    { name = "huggingface-hub", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "platform_machine == 'x86_64' and sys_platform == 'darwin'" },
+    { name = "huggingface-hub", version = "1.4.1", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
     { name = "numpy", version = "2.4.2", source = { registry = "https://pypi.org/simple" }, marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "packaging", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "pyyaml", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "regex", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "safetensors", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "tokenizers", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "tqdm", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "typer-slim", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "packaging", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "pyyaml", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "regex", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "safetensors", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "tokenizers", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "tqdm", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "typer-slim", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bd/7e/8a0c57d562015e5b16c97c1f0b8e0e92ead2c7c20513225dc12c2043ba9f/transformers-5.2.0.tar.gz", hash = "sha256:0088b8b46ccc9eff1a1dca72b5d618a5ee3b1befc3e418c9512b35dea9f9a650", size = 8618176, upload-time = "2026-02-16T18:54:02.867Z" }
 wheels = [
@@ -1627,10 +1691,10 @@ name = "typer"
 version = "0.24.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "annotated-doc", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "click", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "rich", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "shellingham", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "annotated-doc", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "click", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "rich", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "shellingham", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/5a/b6/3e681d3b6bb22647509bdbfdd18055d5adc0dce5c5585359fa46ff805fdc/typer-0.24.0.tar.gz", hash = "sha256:f9373dc4eff901350694f519f783c29b6d7a110fc0dcc11b1d7e353b85ca6504", size = 118380, upload-time = "2026-02-16T22:08:48.496Z" }
 wheels = [
@@ -1642,7 +1706,7 @@ name = "typer-slim"
 version = "0.24.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typer", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "typer", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a7/a7/e6aecc4b4eb59598829a3b5076a93aff291b4fdaa2ded25efc4e1f4d219c/typer_slim-0.24.0.tar.gz", hash = "sha256:f0ed36127183f52ae6ced2ecb2521789995992c521a46083bfcdbb652d22ad34", size = 4776, upload-time = "2026-02-16T22:08:51.2Z" }
 wheels = [
