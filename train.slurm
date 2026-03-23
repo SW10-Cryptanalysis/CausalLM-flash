@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=llama
-#SBATCH --output=train_%j.out
-#SBATCH --error=train_%j.err
+#SBATCH --output=logs/train_%j.out
+#SBATCH --error=logs/train_%j.err
 #SBATCH --time=12:00:00
 #SBATCH --partition=l4
 #SBATCH --cpus-per-task=32
@@ -13,6 +13,8 @@ set -e
 # Manually ensure this directory exists before running sbatch!
 PROJECT_DIR="/ceph/project/SW10-CausalLM/Llama-xFormers"
 cd $PROJECT_DIR || exit 1
+
+NUM_GPUS=4
 
 # 1. Determine which subfolder to check
 IF_SPACES="normal"
@@ -28,11 +30,13 @@ if [ -d "outputs/${IF_SPACES}/final_model" ]; then
     exit 0
 fi
 
+sbatch --dependency=afterany:$SLURM_JOB_ID $0 "$@"
+
 # Ensure logs dir exists (for the tee commands later)
 mkdir -p logs
 
 export HF_HUB_ENABLE_HF_TRANSFER=1
-export CUDA_VISIBLE_DEVICES=$(echo $CUDA_VISIBLE_DEVICES)
+export CUDA_VISIBLE_DEVICES=$(echo $CUDA_VISIBLE_DEVICES | cut -d',' -f1-$NUM_GPUS)
 
 # Start logging
 nvidia-smi | tee -a "logs/train_live_${SLURM_JOB_ID}.log"
@@ -56,9 +60,3 @@ uv run torchrun \
     --nproc_per_node=4 \
     --master_port=$MASTER_PORT \
     src/train.py "$@" 2>&1 | tee -a "logs/train_live_${SLURM_JOB_ID}.log"
-
-# Chain logic
-if [ ! -d "outputs/${IF_SPACES}/final_model" ] && [ -n "$SLURM_JOB_ID" ]; then
-    echo "Queuing next job..."
-    sbatch --dependency=afterok:$SLURM_JOB_ID "$0" "$@"
-fi
