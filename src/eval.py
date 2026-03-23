@@ -183,7 +183,7 @@ class CipherEvaluator:
             if i % 50 == 0:
                 msg = (
                     f"[{i + 1}/{num_samples}] SER: {result['ser']:.4f} | "
-                    "Time: {result['inference_time_seconds']:.2f}s"
+                    f"Time: {result['inference_time_seconds']:.2f}s"
                 )
                 logger.info(msg)
 
