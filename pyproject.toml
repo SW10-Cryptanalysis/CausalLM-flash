@@ -12,12 +12,14 @@ dependencies = [
   "transformers>=5.2.0",
   "easy-logging-formatter>=0.1.1",
   "datasets>=4.6.1",
+  "levenshtein>=0.27.3",
 ]
 
 [tool.uv]
 environments = [
   "sys_platform == 'linux'",
   "sys_platform == 'darwin' and platform_machine == 'arm64'",
+  "sys_platform == 'darwin' and platform_machine == 'x86_64'",
 ]
 
 [dependency-groups]
@@ -74,7 +76,6 @@ select = [
   "T",
 ]
 ignore = [
-  "W191",   # indentation contains tabs
   "ERA001", # Found commented-out code
   "S311",   # Standard pseudo-random generators are not suitable for security/cryptographic purposes
   "D206",   # Docstring should be indented with spaces equal to the surrounding code
@@ -95,4 +96,4 @@ ignore = [
   "ERA001", # Found commented-out code
 ]
 [tool.ruff.format]
-indent-style = "tab"
+indent-style = "space"
