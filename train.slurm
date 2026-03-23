@@ -31,8 +31,6 @@ if [ -d "outputs/${IF_SPACES}/final_model" ]; then
     exit 0
 fi
 
-echo "Dynamically queuing the next 12-hour continuation job with arguments: $@"
-sbatch --dependency=afterany:$SLURM_JOB_ID $0 "$@"
 # ==============================================================================
 
 mkdir -p logs
@@ -51,9 +49,10 @@ export NCCL_DEBUG=INFO
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
 
-uv pip install --python 3.12 -e .
-
-uv pip install --python 3.12 https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
+if [ ! -d ".venv" ]; then
+    uv pip install --python 3.12 -e .
+    uv pip install --python 3.12 https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
+fi
 
 # Ensure master_port is randomized slightly to prevent port collision on shared nodes
 MASTER_PORT=$((10000 + $RANDOM % 20000))
@@ -66,3 +65,10 @@ uv run torchrun \
     --nproc_per_node=4 \
     --master_port=$MASTER_PORT \
     src/train.py "$@" 2>&1 | tee -a logs/train_live_${SLURM_JOB_ID}.log
+
+# only chain if not finished
+if [ ! -d "outputs/${IF_SPACES}/final_model" ] && [ -n "$SLURM_JOB_ID" ]; then
+    echo "Queuing next job with args: $@"
+    NEXT_JOB=$(sbatch --parsable --dependency=afterok:$SLURM_JOB_ID $0 "$@")
+    echo "Queued next job: $NEXT_JOB"
+fi
