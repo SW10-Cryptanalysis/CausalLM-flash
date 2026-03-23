@@ -9,6 +9,7 @@
 #SBATCH --gres=gpu:l4:4
 
 set -e
+set -o pipefail
 
 # Manually ensure this directory exists before running sbatch!
 PROJECT_DIR="/ceph/project/SW10-CausalLM/Llama-xFormers"
