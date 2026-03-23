@@ -4,7 +4,6 @@ import logging
 import time
 from pathlib import Path
 
-import Levenshtein
 import torch
 from datasets import Dataset, DatasetDict, load_from_disk
 from easy_logging import EasyFormatter
@@ -138,18 +137,25 @@ class CipherEvaluator:
         pred_ids = output_ids[0][len(input_ids) :].tolist()
         pred_plain = self.decode_prediction(pred_ids)
 
-        dist = Levenshtein.distance(true_plain, pred_plain)
-        ser = dist / len(true_plain) if len(true_plain) > 0 else 0.0
-
         return {
             "index": index,
             "redundancy": redundancy,
             "ciphertext": self.decode_ciphertext(raw_cipher_ids),
             "plaintext": true_plain,
             "predicted_plaintext": pred_plain,
-            "ser": float(ser),
+            "ser": self._ser(true_plain, pred_plain),
             "inference_time_seconds": round(generation_time, 4),
         }
+
+    def _ser(self, true_plain: str, pred_plain: str) -> float:
+        if not true_plain:
+            return 1.0 if pred_plain else 0.0
+
+        mismatches = sum(t != p for t, p in zip(true_plain, pred_plain, strict=False))
+        length_diff = abs(len(true_plain) - len(pred_plain))
+
+        raw_ser = (mismatches + length_diff) / len(true_plain)
+        return min(raw_ser, 1.0)
 
     def run(self) -> None:
         """Execute the primary loop over all test samples and logs sequentially."""
@@ -161,7 +167,7 @@ class CipherEvaluator:
 
         for i in range(num_samples):
             result = self._evaluate_single_sample(
-                self.dataset[i], # type: ignore
+                self.dataset[i],  # type: ignore
                 i,
             )
 
