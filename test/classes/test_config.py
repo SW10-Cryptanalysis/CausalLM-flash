@@ -4,8 +4,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from dataclasses import dataclass
 
-from classes.config import Config
-
 if TYPE_CHECKING:
     from classes import Config
 
