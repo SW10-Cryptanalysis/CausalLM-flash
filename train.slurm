@@ -8,6 +8,7 @@
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:4
 
+set -x
 set -e
 set -o pipefail
 
@@ -30,10 +31,10 @@ if [ -d "outputs/${IF_SPACES}/final_model" ]; then
     exit 0
 fi
 
-SCRIPT_NAME="train.slurm" 
+SELF=$(basename "$0")
 if [ -n "$SLURM_JOB_ID" ]; then
     echo "Queuing continuation job..."
-    sbatch --dependency=afterany:$SLURM_JOB_ID "$SCRIPT_NAME" "$@"
+    sbatch --dependency=afterany:$SLURM_JOB_ID "$SELF" "$@"
 fi
 
 # 6. GPU ENVIRONMENT
