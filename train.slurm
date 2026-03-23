@@ -60,9 +60,9 @@ nvidia-smi | tee -a "logs/train_live_${SLURM_JOB_ID}.log"
 
 # 8. EXECUTION
 # We use timeout to stop torchrun 5 minutes early so it can exit cleanly
-timeout 11h 55m uv run torchrun \
-    --nproc_per_node=$NUM_GPUS \
+uv run torchrun \
+    --nproc_per_node=4 \
     --master_port=$MASTER_PORT \
-    src/train.py "$@" 2>&1 | tee -a "logs/train_live_${SLURM_JOB_ID}.log" || true
+    -m src.train "$@" 2>&1 | tee -a logs/train_live_${SLURM_JOB_ID}.log
 
 echo "Job cycle finished at $(date)" | tee -a "logs/train_live_${SLURM_JOB_ID}.log"
