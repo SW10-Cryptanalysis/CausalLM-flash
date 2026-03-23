@@ -37,7 +37,7 @@ addopts = "-v --tb=short --cov=src --cov-report=term-missing"
 
 [tool.coverage.report]
 exclude_also = ["if 0:", "if __name__ == .__main__.:", "import", "from"]
-omit = ["src/model.py", "src/train.py"]
+omit = ["src/model.py"]
 
 [tool.ruff]
 line-length = 88
