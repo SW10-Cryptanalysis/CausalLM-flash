@@ -13,7 +13,7 @@ from classes import Config
 
 handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())
-logger = logging.getLogger("evaluate.py")
+logger = logging.getLogger(__name__)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
