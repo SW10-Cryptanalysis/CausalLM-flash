@@ -9,7 +9,7 @@ from dataclasses import dataclass
 @pytest.fixture
 def train_module() -> Any:
     """Lazy-loads the train module to bypass pytest collection delay."""
-    import train
+    from src import train
 
     return train
 
@@ -69,7 +69,7 @@ class TestTrainFunction:
     def mock_dependencies(self, mocker: Any, tmp_path: Path) -> dict[str, Any]:
         """Fixtures to mock out all heavy HF, torch, and custom classes."""
 
-        mock_config_cls = mocker.patch("train.Config")
+        mock_config_cls = mocker.patch("src.train.Config")
         mock_config = mock_config_cls.return_value
         mock_config.final_output_dir = tmp_path / "outputs"
         mock_config.epochs = 1
@@ -86,13 +86,13 @@ class TestTrainFunction:
         """
         mocks = {
             "config": mock_config,
-            "get_model": mocker.patch("train.get_model"),
-            "dataset": mocker.patch("train.CipherPlainData"),
-            "collator": mocker.patch("train.PadCollator"),
-            "trainer_cls": mocker.patch("train.Trainer"),
-            "training_args_cls": mocker.patch("train.TrainingArguments"),
+            "get_model": mocker.patch("src.train.get_model"),
+            "dataset": mocker.patch("src.train.CipherPlainData"),
+            "collator": mocker.patch("src.train.PadCollator"),
+            "trainer_cls": mocker.patch("src.train.Trainer"),
+            "training_args_cls": mocker.patch("src.train.TrainingArguments"),
             "contains_chk": mocker.patch(
-                "train.contains_checkpoint", return_value=False
+                "src.train.contains_checkpoint", return_value=False
             ),
         }
         return mocks

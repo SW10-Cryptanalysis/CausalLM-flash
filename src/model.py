@@ -2,7 +2,7 @@ import torch
 from transformers import LlamaConfig, LlamaForCausalLM
 import logging
 from easy_logging import EasyFormatter
-from classes import Config
+from src.classes.config import Config
 
 handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())

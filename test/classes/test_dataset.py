@@ -3,13 +3,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from classes import CipherPlainData, Config
+    from src.classes.dataset import CipherPlainData
+    from src.classes.config import Config
 
 
 @pytest.fixture
 def config_cls() -> type["Config"]:
     """Provides lazy-loaded Config class."""
-    from classes import Config
+    from src.classes.config import Config
 
     return Config
 
@@ -17,7 +18,7 @@ def config_cls() -> type["Config"]:
 @pytest.fixture
 def cipher_plain_data_cls() -> type["CipherPlainData"]:
     """Provides lazy-loaded CipherPlainData class."""
-    from classes import CipherPlainData
+    from src.classes.dataset import CipherPlainData
 
     return CipherPlainData
 

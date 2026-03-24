@@ -2,13 +2,13 @@ import pytest
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from classes import PadCollator
+    from src.classes.pad_collator import PadCollator
 
 
 @pytest.fixture
 def collator_cls() -> type["PadCollator"]:
     """Provides lazy-loaded PadCollator class."""
-    from classes import PadCollator
+    from src.classes.pad_collator import PadCollator
 
     return PadCollator
 
