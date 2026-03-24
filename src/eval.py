@@ -9,7 +9,7 @@ from datasets import Dataset, DatasetDict, load_from_disk
 from easy_logging import EasyFormatter
 from transformers import LlamaForCausalLM
 
-from classes import Config
+from src.classes.config import Config
 
 handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())

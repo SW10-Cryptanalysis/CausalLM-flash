@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
-    from classes import Config
+    from src.classes.config import Config
 
 
 @pytest.fixture
 def config_cls() -> type["Config"]:
-    from classes import Config
+    from src.classes.config import Config
 
     return Config
 
@@ -25,7 +25,7 @@ class ConfigConstants:
 
 @pytest.fixture
 def constants() -> ConfigConstants:
-    from classes.config import (
+    from src.classes.config import (
         BUFFER,
         UNIQUE_HOMOPHONE_COUNT,
         UNIQUE_LETTER_COUNT,
@@ -52,7 +52,7 @@ class TestConfigTokens:
 
     def test_token_id_chain(self) -> None:
         """Ensure token IDs increment sequentially based on unique_homophones."""
-        from classes import Config
+        from src.classes.config import Config
 
         cfg = Config(unique_homophones=100)
 
@@ -132,7 +132,7 @@ class TestConfigLoadHomophones:
         self, tmp_path: Path, mocker, config_cls: type["Config"]
     ) -> None:
         """Ensure defaults are kept when the file is entirely missing."""
-        mock_logger = mocker.patch("classes.config.logger")
+        mock_logger = mocker.patch("src.classes.config.logger")
 
         cfg = config_cls(data_dir=tmp_path, unique_homophones=500)
         cfg.load_homophones()
@@ -185,7 +185,7 @@ class TestConfigLoadHomophones:
         )
         config_cls, constants = class_and_constants
 
-        mock_logger = mocker.patch("classes.config.logger")
+        mock_logger = mocker.patch("src.classes.config.logger")
         meta_file = tmp_path / constants.HOMOPHONE_FILE
 
         if simulate_os_error:

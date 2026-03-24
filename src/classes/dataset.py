@@ -1,7 +1,7 @@
 from typing import TypedDict
 from torch.utils.data import Dataset
 from datasets import load_from_disk
-from classes import Config
+from src.classes.config import Config
 
 
 class CipherPlainDataItem(TypedDict):

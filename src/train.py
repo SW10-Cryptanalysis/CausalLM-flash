@@ -1,12 +1,14 @@
 import os
 import argparse
-from model import get_model
+from src.model import get_model
 from transformers import Trainer, TrainingArguments
 import logging
 from easy_logging import EasyFormatter
 from pathlib import Path
 
-from classes import Config, CipherPlainData, PadCollator
+from src.classes.config import Config
+from src.classes.dataset import CipherPlainData
+from src.classes.pad_collator import PadCollator
 
 os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 

@@ -31,10 +31,9 @@ if [ -d "outputs/${IF_SPACES}/final_model" ]; then
     exit 0
 fi
 
-SELF=$(basename "$0")
 if [ -n "$SLURM_JOB_ID" ]; then
     echo "Queuing continuation job..."
-    sbatch --dependency=afterany:$SLURM_JOB_ID "$SELF" "$@"
+    sbatch --dependency=afterany:$SLURM_JOB_ID train.slurm "$@" || echo "Warning: sbatch failed, but training will continue."
 fi
 
 # 6. GPU ENVIRONMENT

@@ -6,7 +6,7 @@ from typing import Any
 @pytest.fixture
 def eval_module() -> Any:
     """Lazy-loads the evaluate module."""
-    import eval
+    from src import eval
 
     return eval
 
@@ -22,7 +22,7 @@ def torch_lib() -> Any:
 @pytest.fixture
 def mock_config(mocker: Any) -> Any:
     """Mock config that mimics the actual Config class structure."""
-    from classes import Config
+    from src.classes.config import Config
 
     cfg = mocker.Mock(spec=Config)
     cfg.space_token_id = 4
@@ -30,7 +30,7 @@ def mock_config(mocker: Any) -> Any:
     cfg.eos_token_id = 3
     cfg.bos_token_id = 1
     cfg.sep_token_id = 2
-    cfg.tokenized_dir = Path("/tmp/data") # noqa: S108
+    cfg.tokenized_dir = Path("/tmp/data")  # noqa: S108
     cfg.use_spaces = False
     return cfg
 
@@ -42,7 +42,7 @@ class TestEvaluatorInitialization:
         """Ensure config and properties are properly initialized."""
         mocker.patch.object(eval_module.CipherEvaluator, "_load_model")
         mocker.patch.object(eval_module.CipherEvaluator, "_load_dataset")
-        mock_config_cls = mocker.patch("eval.Config")
+        mock_config_cls = mocker.patch("src.eval.Config")
 
         evaluator = eval_module.CipherEvaluator(
             model_path="/fake/path", use_spaces=True
@@ -63,7 +63,7 @@ class TestEvaluatorInitialization:
         """Verifies hardware-dependent dtype selection and model eval mode."""
         bf16_supported, expected_dtype = test_cfg
         mocker.patch("torch.cuda.is_bf16_supported", return_value=bf16_supported)
-        mock_hf = mocker.patch("eval.LlamaForCausalLM.from_pretrained")
+        mock_hf = mocker.patch("src.eval.LlamaForCausalLM.from_pretrained")
 
         evaluator = eval_module.CipherEvaluator.__new__(eval_module.CipherEvaluator)
         evaluator.model_path = "/fake/path"
@@ -79,12 +79,12 @@ class TestEvaluatorInitialization:
         self, mocker: Any, eval_module: Any, mock_config: Any
     ) -> None:
         """Verifies dataset is loaded from the correct subfolder."""
-        mock_load = mocker.patch("eval.load_from_disk")
+        mock_load = mocker.patch("src.eval.load_from_disk")
         evaluator = eval_module.CipherEvaluator.__new__(eval_module.CipherEvaluator)
         evaluator.config = mock_config
 
         evaluator._load_dataset()
-        mock_load.assert_called_once_with(Path("/tmp/data/Test")) # noqa: S108
+        mock_load.assert_called_once_with(Path("/tmp/data/Test"))  # noqa: S108
 
 
 class TestDecodingAndMetrics:
@@ -130,10 +130,10 @@ class TestOrchestrationLoop:
         """Provides a bootstrapped evaluator for inference loops."""
         mocker.patch.object(eval_module.CipherEvaluator, "_load_model")
         mocker.patch.object(eval_module.CipherEvaluator, "_load_dataset")
-        mocker.patch("eval.Config", return_value=mock_config)
+        mocker.patch("src.eval.Config", return_value=mock_config)
 
-        ev = eval_module.CipherEvaluator(model_path="/tmp", use_spaces=False) # noqa: S108
-        ev.output_log_path = Path("/tmp/results.jsonl") # noqa: S108
+        ev = eval_module.CipherEvaluator(model_path="/tmp", use_spaces=False)  # noqa: S108
+        ev.output_log_path = Path("/tmp/results.jsonl")  # noqa: S108
         return ev
 
     def test_evaluate_single_sample_success(
@@ -163,7 +163,7 @@ class TestOrchestrationLoop:
 
     def test_evaluate_missing_sep_warning(self, mocker: Any, mock_eval: Any) -> None:
         """Verifies broken token sequences are caught and skipped."""
-        mock_logger = mocker.patch("eval.logger")
+        mock_logger = mocker.patch("src.eval.logger")
         bad_item = {"input_ids": [1, 10, 11], "raw_plaintext": "ab", "redundancy": 0}
 
         result = mock_eval._evaluate_single_sample(bad_item, index=5)
@@ -185,7 +185,7 @@ class TestOrchestrationLoop:
                 None,
             ],
         )
-        mock_logger = mocker.patch("eval.logger")
+        mock_logger = mocker.patch("src.eval.logger")
         mock_open = mocker.patch("builtins.open", mocker.mock_open())
 
         mock_eval.run()
@@ -201,7 +201,9 @@ class TestCLI:
 
     def test_main_execution(self, mocker: Any, eval_module: Any) -> None:
         """Verifies argparse mapping to evaluator instantiation."""
-        mocker.patch("sys.argv", ["eval.py", "--model_path", "test_path", "--spaces"])
+        mocker.patch(
+            "sys.argv", ["src/eval.py", "--model_path", "test_path", "--spaces"]
+        )
         mock_run = mocker.patch.object(eval_module.CipherEvaluator, "run")
         mocker.patch.object(eval_module.CipherEvaluator, "_load_model")
         mocker.patch.object(eval_module.CipherEvaluator, "_load_dataset")
