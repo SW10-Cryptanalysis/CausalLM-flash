@@ -209,3 +209,7 @@ __marimo__/
 
 # NIX stuff
 .direnv/
+
+
+outputs/
+logs/

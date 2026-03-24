@@ -6,17 +6,18 @@
 #SBATCH --partition=l4
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
-#SBATCH --gres=gpu:l4:4
+#SBATCH --gres=gpu:4
 
+set -x
 set -e
+set -o pipefail
 
-PROJECT_DIR=/ceph/project/SW10-CausalLM/Llama-xFormers
-cd $PROJECT_DIR
+# 1. THE PROJECT DIRECTORY
+PROJECT_DIR="/ceph/project/SW10-CausalLM/Llama-xFormers"
+cd $PROJECT_DIR || exit 1
+mkdir -p logs
 
-# ==============================================================================
-# DYNAMIC AUTO-CHAINING LOGIC
-# ==============================================================================
-# 1. Determine which subfolder to check based on the --spaces flag
+# 3. DYNAMIC PATH CHECK
 IF_SPACES="normal"
 for arg in "$@"; do
     if [ "$arg" == "--spaces" ]; then
@@ -24,45 +25,44 @@ for arg in "$@"; do
     fi
 done
 
-# 2. Break the chain if the specific final model is found
+# 4. COMPLETION CHECK
 if [ -d "outputs/${IF_SPACES}/final_model" ]; then
-    echo "Success: 'outputs/${IF_SPACES}/final_model' found. Training is completely finished."
-    echo "Breaking the chain."
+    echo "Success: Training is finished. Breaking chain."
     exit 0
 fi
 
-echo "Dynamically queuing the next 12-hour continuation job with arguments: $@"
-sbatch --dependency=afterany:$SLURM_JOB_ID $0 "$@"
-# ==============================================================================
+if [ -n "$SLURM_JOB_ID" ]; then
+    echo "Queuing continuation job..."
+    sbatch --dependency=afterany:$SLURM_JOB_ID train.slurm "$@" || echo "Warning: sbatch failed, but training will continue."
+fi
 
-mkdir -p logs
-
+# 6. GPU ENVIRONMENT
+NUM_GPUS=4
 export HF_HUB_ENABLE_HF_TRANSFER=1
-
-export CUDA_VISIBLE_DEVICES=$(echo $CUDA_VISIBLE_DEVICES)
-
-nvidia-smi | tee -a logs/train_live_${SLURM_JOB_ID}.log
+export CUDA_VISIBLE_DEVICES=$(echo $CUDA_VISIBLE_DEVICES | cut -d',' -f1-$NUM_GPUS)
 
 export PATH="$HOME/.local/bin:$PATH"
 export OMP_NUM_THREADS=8
-
-# NCCL Optimizations for FSDP on L4s
 export NCCL_DEBUG=INFO
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 
+# 7. INSTALLATION
+if [ ! -d ".venv" ]; then
+    uv sync
+    uv pip install --python 3.12 -e .
+    uv pip install --python 3.12 https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
+fi
 
-uv pip install --python 3.12 -e .
-
-uv pip install --python 3.12 https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
-
-# Ensure master_port is randomized slightly to prevent port collision on shared nodes
 MASTER_PORT=$((10000 + $RANDOM % 20000))
 
-# Launch with torchrun. Hugging Face Trainer automatically detects the distributed 
-# environment spawned by torchrun and applies the FSDP arguments defined in train.py
-echo "Launching torchrun with arguments: $@" | tee -a logs/train_live_${SLURM_JOB_ID}.log
+echo "Job started on $(hostname) at $(date)" | tee -a "logs/train_live_${SLURM_JOB_ID}.log"
+nvidia-smi | tee -a "logs/train_live_${SLURM_JOB_ID}.log"
 
+# 8. EXECUTION
+# We use timeout to stop torchrun 5 minutes early so it can exit cleanly
 uv run torchrun \
     --nproc_per_node=4 \
     --master_port=$MASTER_PORT \
-    src/train.py "$@" 2>&1 | tee -a logs/train_live_${SLURM_JOB_ID}.log
+    -m src.train "$@" 2>&1 | tee -a logs/train_live_${SLURM_JOB_ID}.log
+
+echo "Job cycle finished at $(date)" | tee -a "logs/train_live_${SLURM_JOB_ID}.log"
