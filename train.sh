@@ -28,7 +28,7 @@ if ! command -v uv &> /dev/null; then
     export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
-export OMP_NUM_THREADS=16  # Increased for H100's stronger CPUs to feed the dataloader
+export OMP_NUM_THREADS=${OMP_NUM_THREADS:-16}
 
 # 4. H100 NVLink & NCCL Optimizations
 export NCCL_DEBUG=INFO
