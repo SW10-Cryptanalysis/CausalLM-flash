@@ -8,25 +8,19 @@ cd /work
 if [ ! -d "Llama-xFormers" ]; then
     echo "Cloning repository..."
     git clone https://github.com/SW10-Cryptanalysis/Llama-xFormers.git
+    cd Llama-xFormers
+else
+    echo "Git pulling newest changes..."
+    cd Llama-xFormers
+    git pull
 fi
 
-cd Llama-xFormers
 mkdir -p logs
 export HF_HUB_ENABLE_HF_TRANSFER=1
+export UV_CACHE_DIR="/work/.uv_cache"
 
 # 3. Dynamically count available GPUs
 NUM_GPUS=$(nvidia-smi --list-gpus | wc -l)
-echo "Training Job started on $(hostname) at $(date) with $NUM_GPUS GPU(s)"
-
-# Safely set CUDA_VISIBLE_DEVICES based on the detected count
-export CUDA_VISIBLE_DEVICES=$(seq -s, 0 $((NUM_GPUS-1)))
-nvidia-smi
-
-# Ensure uv is installed 
-if ! command -v uv &> /dev/null; then
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    export PATH="$HOME/.cargo/bin:$PATH"
-fi
 
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-16}
 
@@ -42,11 +36,11 @@ fi
 uv pip install --system -e .
 
 # Install hf_transfer to enable faster Hugging Face downloads
-uv pip install hf_transfer
+uv pip install --system hf_transfer
 
 # 5. Flash Attention 2 Installation
 echo "Installing Flash Attention 2..."
-uv pip install https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.9.0/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+uv pip install --system https://github.com/mjun0812/flash-attention-prebuild-wheels/releases/download/v0.9.0/flash_attn-2.8.3+cu130torch2.10-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
 
 MASTER_PORT=$((10000 + $RANDOM % 20000))
 
