@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
 # 1. Navigate to your mounted workspace
 cd /work
