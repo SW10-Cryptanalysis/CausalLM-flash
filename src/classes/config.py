@@ -59,7 +59,6 @@ class Config:
     # + buffer (start/end/padding, etc) and maybe spacing "_"
     vocab_size: int = 0
     # Input is BOS + ciphertext + SEP + plaintext + EOS
-    max_context: int = 0
     dims: int = 384
     layers: int = 16
     att_heads: int = 6
@@ -111,12 +110,12 @@ class Config:
     output_dir: Path = OUTPUT_DIR
     data_dir: Path = DATA_DIR
 
-    def __post_init__(self) -> None:
+    @property
+    def max_context(self) -> int:
         """Calculate dynamic variables after the dataclass is initialized."""
         if self.use_spaces:
-            self.max_context = (MAX_PLAIN_SPACES * 2) + BUFFER
-        else:
-            self.max_context = (MAX_PLAIN_NORMAL * 2) + BUFFER
+            return (MAX_PLAIN_SPACES * 2) + BUFFER
+        return (MAX_PLAIN_NORMAL * 2) + BUFFER
 
     @property
     def tokenized_dir(self) -> Path:
