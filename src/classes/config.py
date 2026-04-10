@@ -100,13 +100,15 @@ class Config:
     def is_valid_init(self) -> bool:
         """Is valid based on initialization."""
         return (
-            self.vocab_size != 0 or self.max_context != 0 or self.unique_homophones != 0
+            self.vocab_size != 0
+            and self.max_context != 0
+            and self.unique_homophones != 0
         )
 
     # TRAINING
-    batch_size: int = 16
-    grad_accum: int = 1
-    learning_rate: float = 3e-4
+    batch_size: int = 2
+    grad_accum: int = 8
+    learning_rate: float = 5e-4
     epochs: int = 5
     log_steps: int = 10
     save_steps: int = 1000
