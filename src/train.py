@@ -50,11 +50,7 @@ def train() -> None:
     config.load_homophones()
 
     # Safety check
-    if (
-        config.vocab_size == 0
-        or config.max_context == 0
-        or config.unique_homophones == 0
-    ):
+    if not config.is_valid_init:
         raise ValueError(
             f"CRITICAL CONFIG ERROR: dimension was not initialized properly!\n"
             f"vocab_size: {config.vocab_size}\n"

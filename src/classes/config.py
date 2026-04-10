@@ -96,6 +96,13 @@ class Config:
         """Character ofset to avoid clashes with defined tokens."""
         return self.eos_token_id + 1
 
+    @property
+    def is_valid_init(self) -> bool:
+        """Is valid based on initialization."""
+        return (
+            self.vocab_size != 0 or self.max_context != 0 or self.unique_homophones != 0
+        )
+
     # TRAINING
     batch_size: int = 16
     grad_accum: int = 1
