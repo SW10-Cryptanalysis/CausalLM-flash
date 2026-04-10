@@ -1,32 +1,17 @@
 import pytest
+from pytest_mock import MockerFixture
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import Any
 
-if TYPE_CHECKING:
-    from src.classes.dataset import CipherPlainData
-    from src.classes.config import Config
-
-
-@pytest.fixture
-def config_cls() -> type["Config"]:
-    """Provides lazy-loaded Config class."""
-    from src.classes.config import Config
-
-    return Config
-
-
-@pytest.fixture
-def cipher_plain_data_cls() -> type["CipherPlainData"]:
-    """Provides lazy-loaded CipherPlainData class."""
-    from src.classes.dataset import CipherPlainData
-
-    return CipherPlainData
+from src.classes.config import Config
+from src.classes.dataset import CipherPlainData
 
 
 class RawToArrowConverter:
     """Helper class to tokenize raw text pairs into Arrow dictionaries."""
 
-    def __init__(self, config: "Config") -> None:
+    def __init__(self, config: Config) -> None:
         self.cfg = config
         self.t_key = "plaintext_with_boundaries" if config.use_spaces else "plaintext"
         self.c_key = "ciphertext_with_boundaries" if config.use_spaces else "ciphertext"
@@ -67,142 +52,146 @@ class RawToArrowConverter:
         }
 
 
-@pytest.fixture
-def mock_arrow_dir(tmp_path: Path) -> Path:
-    """Creates a fake Arrow dataset structure on disk for testing."""
-    from datasets import Dataset as ArrowDataset
-
-    tokenized_path = tmp_path / "tokenized_normal" / "Training"
-    tokenized_path.mkdir(parents=True)
-
-    dummy_data = {
-        "input_ids": [[10, 20, 501, 502, 503]],
-        "labels": [[10, 20, 501, 502, 503]],
-        "redundancy": [10],
-    }
-    ArrowDataset.from_dict(dummy_data).save_to_disk(str(tokenized_path))
-    return tmp_path
+@dataclass
+class CipherDataTestCase:
+    split: str
+    path_exists: bool
+    expected_exception: type[Exception] | None
+    dataset_len: int
+    mock_item: dict[str, Any] | None
+    expected_item: dict[str, Any] | None
 
 
 class TestCipherPlainData:
     """Tests for the PyTorch Dataset implementation."""
 
-    def test_init_and_len(
+    @pytest.mark.parametrize(
+        "test_case",
+        [
+            CipherDataTestCase(
+                split="Training",
+                path_exists=True,
+                expected_exception=None,
+                dataset_len=1,
+                mock_item={
+                    "input_ids": [10, 20, 501, 502, 503],
+                    "labels": [10, 20, 501, 502, 503],
+                    "redundancy": 10,
+                },
+                expected_item={
+                    "input_ids": [10, 20, 501, 502, 503],
+                    "labels": [10, 20, 501, 502, 503],
+                },
+            ),
+            CipherDataTestCase(
+                split="Test",
+                path_exists=False,
+                expected_exception=FileNotFoundError,
+                dataset_len=0,
+                mock_item=None,
+                expected_item=None,
+            ),
+        ],
+    )
+    def test_dataset_lifecycle(
         self,
-        mock_arrow_dir: Path,
-        config_cls: type["Config"],
-        cipher_plain_data_cls: type["CipherPlainData"],
-    ) -> None:
-        """Ensure the dataset initializes and accurately reports its size."""
-        cfg = config_cls(data_dir=mock_arrow_dir)
-        ds = cipher_plain_data_cls(cfg, split="Training")
-
-        assert len(ds) == 1
-
-    def test_getitem_structure(
-        self,
-        mock_arrow_dir: Path,
-        config_cls: type["Config"],
-        cipher_plain_data_cls: type["CipherPlainData"],
-    ) -> None:
-        """Verify __getitem__ drops unused keys (like redundancy) and retains labels."""
-        cfg = config_cls(data_dir=mock_arrow_dir)
-        ds = cipher_plain_data_cls(cfg, split="Training")
-
-        item = ds[0]
-
-        assert item["input_ids"] == [10, 20, 501, 502, 503]
-        assert item["labels"] == [10, 20, 501, 502, 503]
-        assert "redundancy" not in item
-
-    def test_missing_directory_raises_error(
-        self,
+        test_case: CipherDataTestCase,
         tmp_path: Path,
-        config_cls: type["Config"],
-        cipher_plain_data_cls: type["CipherPlainData"],
+        mocker: MockerFixture,
     ) -> None:
-        """Verify that missing preprocessed data crashes early and cleanly."""
-        cfg = config_cls(data_dir=tmp_path)
+        cfg = Config(data_dir=tmp_path)
+        tokenized_dir = cfg.tokenized_dir / test_case.split
 
-        with pytest.raises(FileNotFoundError, match="Missing Arrow Data"):
-            cipher_plain_data_cls(cfg, split="Training")
+        if test_case.path_exists:
+            tokenized_dir.mkdir(parents=True, exist_ok=True)
+
+        mock_hf_dataset = mocker.MagicMock()
+        mock_hf_dataset.__len__.return_value = test_case.dataset_len
+
+        if test_case.mock_item:
+            mock_hf_dataset.__getitem__.return_value = test_case.mock_item
+
+        mocker.patch(
+            "src.classes.dataset.load_from_disk",
+            return_value=mock_hf_dataset,
+        )
+
+        if test_case.expected_exception:
+            with pytest.raises(
+                test_case.expected_exception, match="Missing Arrow Data"
+            ):
+                CipherPlainData(cfg, split=test_case.split)
+        else:
+            ds = CipherPlainData(cfg, split=test_case.split)
+
+            assert len(ds) == test_case.dataset_len
+
+            item = ds[0]
+            assert item == test_case.expected_item
+            assert "redundancy" not in item
+
+
+@dataclass
+class ConverterTestCase:
+    use_spaces: bool
+    max_context: int
+    example: dict[str, Any]
+    expected_ids: list[int]
 
 
 class TestRawToArrowConverter:
     """Tests for the tokenization and truncation logic."""
 
     @pytest.fixture
-    def mock_cfg(self, mocker: Any, config_cls: type["Config"]) -> Any:
-        """Provides a standard mocked Config to control exact ID generation."""
-        cfg = mocker.Mock(spec=config_cls)
+    def mock_cfg(self, mocker: MockerFixture) -> Any:
+        cfg = mocker.Mock(spec=Config)
         cfg.bos_token_id = 1
         cfg.sep_token_id = 2
         cfg.eos_token_id = 3
         cfg.space_token_id = 4
         cfg.char_offset = 10
-        cfg.max_context = 100
-        cfg.use_spaces = False
         return cfg
 
-    def test_sequence_order(self, mock_cfg: Any) -> None:
-        """Verify the arithmetic and exact ordering of sequence parts."""
-        example = {"ciphertext": "5 6", "plaintext": "xy", "redundancy": 5}
-        converter = RawToArrowConverter(mock_cfg)
-        result = converter.tokenize_fn(example)
-
-        """
-        Expected calculation based on the mock:
-        [BOS] -> 1
-        [Cipher] -> 5, 6
-        [SEP] -> 2
-        [Plain] -> 'x' (23 + 10 = 33), 'y' (24 + 10 = 34)
-        [EOS] -> 3
-        """
-        expected_ids = [1, 5, 6, 2, 33, 34, 3]
-
-        assert result["input_ids"] == expected_ids
-        assert result["labels"] == expected_ids
-
     @pytest.mark.parametrize(
-        "use_spaces, example, expected_ids",
+        "test_case",
         [
-            (
-                True,
-                {
+            ConverterTestCase(
+                use_spaces=False,
+                max_context=100,
+                example={"ciphertext": "5 6", "plaintext": "xy", "redundancy": 5},
+                expected_ids=[1, 5, 6, 2, 33, 34, 3],
+            ),
+            ConverterTestCase(
+                use_spaces=True,
+                max_context=100,
+                example={
                     "ciphertext_with_boundaries": "5 _ 6",
                     "plaintext_with_boundaries": "x_y",
                 },
-                [1, 5, 4, 6, 2, 33, 4, 34, 3],
+                expected_ids=[1, 5, 4, 6, 2, 33, 4, 34, 3],
+            ),
+            ConverterTestCase(
+                use_spaces=False,
+                max_context=7,
+                example={
+                    "ciphertext": "10 20 30 40",
+                    "plaintext": "abcd",
+                    "redundancy": 0,
+                },
+                expected_ids=[1, 10, 20, 2, 10, 11, 3],
             ),
         ],
     )
-    def test_spaces_handling(
+    def test_tokenize_fn(
         self,
         mock_cfg: Any,
-        use_spaces: bool,
-        example: dict,
-        expected_ids: list[int],
+        test_case: ConverterTestCase,
     ) -> None:
-        """Verify that underscores are correctly translated into the configured space token ID."""
-        mock_cfg.use_spaces = use_spaces
-        converter = RawToArrowConverter(mock_cfg)
-        result = converter.tokenize_fn(example)
-
-        assert result["input_ids"] == expected_ids
-
-    def test_truncation_logic(self, mock_cfg: Any) -> None:
-        """Verify sequences exceeding max_context are correctly bounded."""
-        mock_cfg.max_context = 7
-        example = {"ciphertext": "10 20 30 40", "plaintext": "abcd", "redundancy": 0}
+        mock_cfg.use_spaces = test_case.use_spaces
+        mock_cfg.max_context = test_case.max_context
 
         converter = RawToArrowConverter(mock_cfg)
-        result = converter.tokenize_fn(example)
+        result = converter.tokenize_fn(test_case.example)
 
-        """
-        Max context is 7. Special tokens budget is 3 (BOS, SEP, EOS).
-        Content budget is 4. Budget per side is 2.
-        Cipher gets truncated to [10, 20]. Plain gets truncated to ['a', 'b'].
-        """
-        expected_ids = [1, 10, 20, 2, 10, 11, 3]
-
-        assert result["input_ids"] == expected_ids
+        assert result["input_ids"] == test_case.expected_ids
+        assert result["labels"] == test_case.expected_ids

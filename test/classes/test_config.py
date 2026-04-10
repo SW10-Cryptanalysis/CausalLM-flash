@@ -1,47 +1,40 @@
 import json
 import pytest
 from pathlib import Path
-from typing import TYPE_CHECKING
 from dataclasses import dataclass
-
-if TYPE_CHECKING:
-    from src.classes.config import Config
-
-
-@pytest.fixture
-def config_cls() -> type["Config"]:
-    from src.classes.config import Config
-
-    return Config
+from pytest_mock import MockerFixture
+from src.classes.config import Config
 
 
 @dataclass
 class ConfigConstants:
-    BUFFER: int
-    UNIQUE_LETTER_COUNT: int
-    HOMOPHONE_FILE: str
+    """Constants required for configuration testing."""
+
+    buffer_val: int
+    unique_letter_count: int
+    homophone_file: str
+    max_plain_spaces: int
+    max_plain_normal: int
 
 
 @pytest.fixture
 def constants() -> ConfigConstants:
+    """Provides dynamic constants imported directly from the source module."""
     from src.classes.config import (
         BUFFER,
         UNIQUE_LETTER_COUNT,
         HOMOPHONE_FILE,
+        MAX_PLAIN_SPACES,
+        MAX_PLAIN_NORMAL,
     )
 
     return ConfigConstants(
-        BUFFER=BUFFER,
-        UNIQUE_LETTER_COUNT=UNIQUE_LETTER_COUNT,
-        HOMOPHONE_FILE=HOMOPHONE_FILE,
+        buffer_val=BUFFER,
+        unique_letter_count=UNIQUE_LETTER_COUNT,
+        homophone_file=HOMOPHONE_FILE,
+        max_plain_spaces=MAX_PLAIN_SPACES,
+        max_plain_normal=MAX_PLAIN_NORMAL,
     )
-
-
-@pytest.fixture
-def class_and_constants(
-    config_cls, constants
-) -> tuple[type["Config"], ConfigConstants]:
-    return config_cls, constants
 
 
 class TestConfigTokens:
@@ -49,8 +42,6 @@ class TestConfigTokens:
 
     def test_token_id_chain(self) -> None:
         """Ensure token IDs increment sequentially based on unique_homophones."""
-        from src.classes.config import Config
-
         cfg = Config(unique_homophones=100)
 
         assert cfg.sep_token_id == 101
@@ -60,126 +51,189 @@ class TestConfigTokens:
         assert cfg.char_offset == 105
 
 
+@dataclass
+class PathTestCase:
+    """Defines parameters for dynamic path resolution tests."""
+
+    use_spaces: bool
+    expected_output: str
+    expected_tokenized: str
+
+
 class TestConfigPaths:
     """Tests for path resolution and dynamic properties depending on flags."""
 
     @pytest.mark.parametrize(
-        "test_cfg",
+        "test_case",
         [
-            (False, "normal", "tokenized_normal"),
-            (True, "spaces", "tokenized_spaced"),
+            PathTestCase(
+                use_spaces=False,
+                expected_output="normal",
+                expected_tokenized="tokenized_normal",
+            ),
+            PathTestCase(
+                use_spaces=True,
+                expected_output="spaces",
+                expected_tokenized="tokenized_spaced",
+            ),
         ],
     )
     def test_dynamic_directories(
         self,
         tmp_path: Path,
-        test_cfg: tuple[bool, str, str],
-        config_cls,
+        test_case: PathTestCase,
     ) -> None:
         """Ensure all dynamic directories correctly reflect the use_spaces flag."""
+        cfg = Config(
+            output_dir=tmp_path,
+            data_dir=tmp_path,
+            use_spaces=test_case.use_spaces,
+        )
 
-        cfg = config_cls(output_dir=tmp_path, data_dir=tmp_path, use_spaces=test_cfg[0])
+        assert cfg.final_output_dir == tmp_path / test_case.expected_output
+        assert cfg.tokenized_dir == tmp_path / test_case.expected_tokenized
 
-        assert cfg.final_output_dir == tmp_path / test_cfg[1]
-        assert cfg.tokenized_dir == tmp_path / test_cfg[2]
+
+@dataclass
+class ContextTestCase:
+    """Defines parameters for max_context calculation tests."""
+
+    use_spaces: bool
+
+
+class TestConfigProperties:
+    """Tests for logical properties and context calculations."""
+
+    @pytest.mark.parametrize(
+        "test_case",
+        [
+            ContextTestCase(use_spaces=False),
+            ContextTestCase(use_spaces=True),
+        ],
+    )
+    def test_max_context(
+        self,
+        test_case: ContextTestCase,
+        constants: ConfigConstants,
+    ) -> None:
+        """Verify max context relies on the correct constant based on the spaces flag."""
+        cfg = Config(use_spaces=test_case.use_spaces)
+
+        if test_case.use_spaces:
+            expected = (constants.max_plain_spaces * 2) + constants.buffer_val
+        else:
+            expected = (constants.max_plain_normal * 2) + constants.buffer_val
+
+        assert cfg.max_context == expected
+
+    def test_is_valid_init(self) -> None:
+        """Verify the initialization validity check evaluates properly."""
+        cfg = Config()
+
+        assert cfg.is_valid_init is True
+
+
+@dataclass
+class LoadHomophonesTestCase:
+    """Defines testing parameters for exception handling during homophone loads."""
+
+    file_content: str
+    simulate_os_error: bool
+    expected_exception: type[Exception]
+
+
+@dataclass
+class HomophonesSuccessTestCase:
+    """Defines parameters for successful homophone loading tests."""
+
+    max_symbol_id: int
 
 
 class TestConfigLoadHomophones:
     """Tests for the load_homophones method and vocabulary sizing."""
 
-    def test_vocab_size_default(self, config_cls: type["Config"]) -> None:
+    def test_vocab_size_default(self) -> None:
         """Check that default vocabulary size is 0 before loading."""
-        cfg = config_cls()
+        cfg = Config()
+
         assert cfg.vocab_size == 0
 
-    def test_vocab_capacity(
-        self, tmp_path: Path, constants: ConfigConstants, config_cls: type["Config"]
-    ) -> None:
-        """Ensure the vocabulary size can accommodate the character 'z' after loading."""
-        meta_file = tmp_path / constants.HOMOPHONE_FILE
-        meta_file.write_text(json.dumps({"max_symbol_id": 500}))
-
-        cfg = config_cls(data_dir=tmp_path)
-        cfg.load_homophones()
-
-        # Calculate highest possible ID: offset + 25 (for 'z')
-        highest_id = cfg.char_offset + 25
-        assert cfg.vocab_size > highest_id
-
+    @pytest.mark.parametrize(
+        "test_case",
+        [
+            HomophonesSuccessTestCase(max_symbol_id=500),
+            HomophonesSuccessTestCase(max_symbol_id=999),
+        ],
+    )
     def test_load_homophones_success(
-        self, tmp_path: Path, constants: ConfigConstants, config_cls: type["Config"]
+        self,
+        tmp_path: Path,
+        constants: ConfigConstants,
+        test_case: HomophonesSuccessTestCase,
     ) -> None:
-        """Ensure max_symbol_id is loaded correctly from a valid metadata file."""
-        meta_file = tmp_path / constants.HOMOPHONE_FILE
-        meta_file.write_text(json.dumps({"max_symbol_id": 999}))
+        """Ensure homophones load correctly and vocabulary scales to accommodate all characters."""
+        meta_file = tmp_path / constants.homophone_file
+        meta_file.write_text(json.dumps({"max_symbol_id": test_case.max_symbol_id}))
 
-        cfg = config_cls(data_dir=tmp_path)
+        cfg = Config(data_dir=tmp_path)
         cfg.load_homophones()
 
-        assert cfg.unique_homophones == 999
+        # Validates unique homophones are dynamically updated
+        assert cfg.unique_homophones == test_case.max_symbol_id
+
+        # Validates exact vocab arithmetic
         assert cfg.vocab_size == cfg.char_offset + 26 + 1
 
+        # Validates capacity rule (covers the letter 'z')
+        assert cfg.vocab_size > cfg.char_offset + 25
+
     def test_load_homophones_missing_file(
-        self, tmp_path: Path, config_cls: type["Config"]
+        self,
+        tmp_path: Path,
     ) -> None:
         """Ensure the script crashes loudly if the metadata file is missing."""
-        cfg = config_cls(data_dir=tmp_path)
+        cfg = Config(data_dir=tmp_path)
 
-        # We EXPECT a FileNotFoundError because tmp_path is empty
         with pytest.raises(FileNotFoundError):
             cfg.load_homophones()
 
-    @dataclass
-    class LoadHomophonesErrors:
-        file_content: str
-        simulate_os_error: bool
-        expected_exception: type[Exception]
-        id: str
-
-    load_homophone_cases = [
-        LoadHomophonesErrors(
-            file_content="{invalid_json:",
-            simulate_os_error=False,
-            expected_exception=ValueError,
-            id="invalid_json",
-        ),
-        LoadHomophonesErrors(
-            file_content='{"wrong_key": 999}',
-            simulate_os_error=False,
-            expected_exception=ValueError,
-            id="missing_key",
-        ),
-        LoadHomophonesErrors(
-            file_content="",
-            simulate_os_error=True,
-            expected_exception=OSError,
-            id="os_error",
-        ),
-    ]
-
     @pytest.mark.parametrize(
-        "test_cfg",
-        load_homophone_cases,
-        ids=[tc.id for tc in load_homophone_cases],
+        "test_case",
+        [
+            LoadHomophonesTestCase(
+                file_content="{invalid_json:",
+                simulate_os_error=False,
+                expected_exception=ValueError,
+            ),
+            LoadHomophonesTestCase(
+                file_content='{"wrong_key": 999}',
+                simulate_os_error=False,
+                expected_exception=ValueError,
+            ),
+            LoadHomophonesTestCase(
+                file_content="",
+                simulate_os_error=True,
+                expected_exception=OSError,
+            ),
+        ],
     )
     def test_load_homophones_errors(
         self,
         tmp_path: Path,
-        mocker,
-        test_cfg: LoadHomophonesErrors,
-        class_and_constants,
+        mocker: MockerFixture,
+        test_case: LoadHomophonesTestCase,
+        constants: ConfigConstants,
     ) -> None:
-        """Ensure errors are caught and warnings logged for various failure modes."""
-        config_cls, constants = class_and_constants
-        meta_file = tmp_path / constants.HOMOPHONE_FILE
+        """Ensure errors are caught and correctly formatted for various failure modes."""
+        meta_file = tmp_path / constants.homophone_file
 
-        if test_cfg.simulate_os_error:
+        if test_case.simulate_os_error:
             meta_file.touch()
             mocker.patch("builtins.open", side_effect=OSError("Permission denied"))
         else:
-            meta_file.write_text(test_cfg.file_content)
+            meta_file.write_text(test_case.file_content)
 
-        cfg = config_cls(data_dir=tmp_path)
+        cfg = Config(data_dir=tmp_path)
 
-        with pytest.raises(test_cfg.expected_exception):
+        with pytest.raises(test_case.expected_exception):
             cfg.load_homophones()
