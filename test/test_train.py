@@ -85,6 +85,7 @@ class TestTrainFunction:
         and torch version checks for bf16, tf32, and fused optimizers.
         """
         mocks = {
+            "config_cls": mock_config_cls,
             "config": mock_config,
             "get_model": mocker.patch("src.train.get_model"),
             "dataset": mocker.patch("src.train.CipherPlainData"),
@@ -138,8 +139,10 @@ class TestTrainFunction:
 
         train_module.train()
 
+        mock_config_cls = mock_dependencies["config_cls"]
+        mock_config_cls.assert_called_with(use_spaces=expected_spaces)
+
         mock_config = mock_dependencies["config"]
-        assert mock_config.use_spaces is expected_spaces
         mock_config.load_homophones.assert_called_once()
 
     def test_trainer_execution_flow(
