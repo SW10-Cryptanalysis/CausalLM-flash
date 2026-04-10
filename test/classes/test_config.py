@@ -18,7 +18,6 @@ def config_cls() -> type["Config"]:
 @dataclass
 class ConfigConstants:
     BUFFER: int
-    UNIQUE_HOMOPHONE_COUNT: int
     UNIQUE_LETTER_COUNT: int
     HOMOPHONE_FILE: str
 
@@ -27,14 +26,12 @@ class ConfigConstants:
 def constants() -> ConfigConstants:
     from src.classes.config import (
         BUFFER,
-        UNIQUE_HOMOPHONE_COUNT,
         UNIQUE_LETTER_COUNT,
         HOMOPHONE_FILE,
     )
 
     return ConfigConstants(
         BUFFER=BUFFER,
-        UNIQUE_HOMOPHONE_COUNT=UNIQUE_HOMOPHONE_COUNT,
         UNIQUE_LETTER_COUNT=UNIQUE_LETTER_COUNT,
         HOMOPHONE_FILE=HOMOPHONE_FILE,
     )
@@ -90,29 +87,23 @@ class TestConfigPaths:
 class TestConfigLoadHomophones:
     """Tests for the load_homophones method and vocabulary sizing."""
 
-    def test_vocab_size_default(
-        self, constants: ConfigConstants, config_cls: type["Config"]
-    ) -> None:
-        """Check default vocabulary size calculation upon initialization."""
-        cfg = config_cls(
-            unique_homophones=constants.UNIQUE_HOMOPHONE_COUNT,
-            unique_letters=constants.UNIQUE_LETTER_COUNT,
-        )
-        expected_size = (
-            constants.UNIQUE_HOMOPHONE_COUNT
-            + constants.UNIQUE_LETTER_COUNT
-            + constants.BUFFER
-        )
-        assert cfg.vocab_size == expected_size
+    def test_vocab_size_default(self, config_cls: type["Config"]) -> None:
+        """Check that default vocabulary size is 0 before loading."""
+        cfg = config_cls()
+        assert cfg.vocab_size == 0
 
-    def test_vocab_capacity(self, tmp_path: Path, config_cls: type["Config"]) -> None:
+    def test_vocab_capacity(
+        self, tmp_path: Path, constants: ConfigConstants, config_cls: type["Config"]
+    ) -> None:
         """Ensure the vocabulary size can accommodate the character 'z' after loading."""
+        meta_file = tmp_path / constants.HOMOPHONE_FILE
+        meta_file.write_text(json.dumps({"max_symbol_id": 500}))
+
         cfg = config_cls(data_dir=tmp_path)
         cfg.load_homophones()
 
-        """Calculate highest possible ID: offset + 25 (for 'z')"""
+        # Calculate highest possible ID: offset + 25 (for 'z')
         highest_id = cfg.char_offset + 25
-
         assert cfg.vocab_size > highest_id
 
     def test_load_homophones_success(
@@ -129,39 +120,39 @@ class TestConfigLoadHomophones:
         assert cfg.vocab_size == cfg.char_offset + 26 + 1
 
     def test_load_homophones_missing_file(
-        self, tmp_path: Path, mocker, config_cls: type["Config"]
+        self, tmp_path: Path, config_cls: type["Config"]
     ) -> None:
-        """Ensure defaults are kept when the file is entirely missing."""
-        mock_logger = mocker.patch("src.classes.config.logger")
+        """Ensure the script crashes loudly if the metadata file is missing."""
+        cfg = config_cls(data_dir=tmp_path)
 
-        cfg = config_cls(data_dir=tmp_path, unique_homophones=500)
-        cfg.load_homophones()
-
-        assert cfg.unique_homophones == 500
-
-        """The os.path.exists check prevents errors/warnings if the file is just absent"""
-        mock_logger.warning.assert_not_called()
+        # We EXPECT a FileNotFoundError because tmp_path is empty
+        with pytest.raises(FileNotFoundError):
+            cfg.load_homophones()
 
     @dataclass
     class LoadHomophonesErrors:
         file_content: str
         simulate_os_error: bool
+        expected_exception: type[Exception]
         id: str
 
     load_homophone_cases = [
         LoadHomophonesErrors(
             file_content="{invalid_json:",
             simulate_os_error=False,
+            expected_exception=ValueError,
             id="invalid_json",
         ),
         LoadHomophonesErrors(
             file_content='{"wrong_key": 999}',
             simulate_os_error=False,
+            expected_exception=ValueError,
             id="missing_key",
         ),
         LoadHomophonesErrors(
             file_content="",
             simulate_os_error=True,
+            expected_exception=OSError,
             id="os_error",
         ),
     ]
@@ -179,23 +170,16 @@ class TestConfigLoadHomophones:
         class_and_constants,
     ) -> None:
         """Ensure errors are caught and warnings logged for various failure modes."""
-        file_content, simulate_os_error = (
-            test_cfg.file_content,
-            test_cfg.simulate_os_error,
-        )
         config_cls, constants = class_and_constants
-
-        mock_logger = mocker.patch("src.classes.config.logger")
         meta_file = tmp_path / constants.HOMOPHONE_FILE
 
-        if simulate_os_error:
+        if test_cfg.simulate_os_error:
             meta_file.touch()
             mocker.patch("builtins.open", side_effect=OSError("Permission denied"))
         else:
-            meta_file.write_text(file_content)
+            meta_file.write_text(test_cfg.file_content)
 
-        cfg = config_cls(data_dir=tmp_path, unique_homophones=500)
-        cfg.load_homophones()
+        cfg = config_cls(data_dir=tmp_path)
 
-        assert cfg.unique_homophones == 500
-        assert mock_logger.warning.call_count == 3
+        with pytest.raises(test_cfg.expected_exception):
+            cfg.load_homophones()

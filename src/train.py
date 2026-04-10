@@ -46,9 +46,22 @@ def train() -> None:
     parser.add_argument("--spaces", action="store_true")
     cmd_args = parser.parse_args()
 
-    config = Config()
-    config.use_spaces = cmd_args.spaces
+    config = Config(use_spaces=cmd_args.spaces)
     config.load_homophones()
+
+    # Safety check
+    if (
+        config.vocab_size == 0
+        or config.max_context == 0
+        or config.unique_homophones == 0
+    ):
+        raise ValueError(
+            f"CRITICAL CONFIG ERROR: dimension was not initialized properly!\n"
+            f"vocab_size: {config.vocab_size}\n"
+            f"max_context: {config.max_context}\n"
+            f"unique_homophones: {config.unique_homophones}\n"
+            f"Check the Config class and load_homophones() method.",
+        )
 
     # Path handling
     current_output_dir = config.final_output_dir
