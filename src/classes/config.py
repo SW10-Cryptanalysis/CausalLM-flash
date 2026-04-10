@@ -50,7 +50,6 @@ class Config:
 
     # ARCHITECTURE
 
-    # Default value is UNIQUE_HOMOPHONE_COUNT unless a HOMOPHONE_FILE exists
     unique_homophones: int = 0
     unique_letters: int = UNIQUE_LETTER_COUNT
     pad_token_id: int = 0
