@@ -34,8 +34,8 @@ export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 if [ "$NUM_GPUS" -gt 1 ]; then
     export NCCL_P2P_DISABLE=0
     export NCCL_IB_DISABLE=0
-    export NCCL_P2P_LEVEL=NVL
-    export NCCL_NVLS_ENABLE=1
+    export NCCL_P2P_LEVEL=SYS
+    export NCCL_NET_GDR_LEVEL=SYS
 fi
 
 # ── Virtual environment ────────────────────────────────────────────────────────

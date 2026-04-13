@@ -11,7 +11,7 @@ UNIQUE_LETTER_COUNT = 26
 BUFFER = 8
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers-AAU"
 
 HOMOPHONE_FILE = "metadata.json"
 
@@ -19,6 +19,7 @@ handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())
 logger = logging.getLogger(__name__)
 logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 @dataclass
@@ -106,13 +107,14 @@ class Config:
         )
 
     # TRAINING
-    batch_size: int = 2
-    grad_accum: int = 8
+    batch_size: int = 8
+    grad_accum: int = 4
     learning_rate: float = 5e-4
     epochs: int = 5
-    log_steps: int = 10
-    save_steps: int = 1000
+    log_steps: int = 100
+    save_steps: int = 2500
     use_spaces: bool = False
+    gradient_checkpointing: bool = True
 
     # SYSTEM
     output_dir: Path = OUTPUT_DIR
@@ -151,3 +153,9 @@ class Config:
             ) from e
 
         self.vocab_size = self.char_offset + 26 + 1
+        logger.info(
+            f"Config initialized: unique_homophones={self.unique_homophones}, sep_token_id={self.sep_token_id}, space_token_id={self.space_token_id}, bos_token_id={self.bos_token_id}, eos_token_id={self.eos_token_id}, char_offset={self.char_offset}, vocab_size={self.vocab_size}",
+        )
+        logger.info(
+            f"Max len set to {self.max_context} based on use_spaces={self.use_spaces}"
+        )
