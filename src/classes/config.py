@@ -107,8 +107,8 @@ class Config:
         )
 
     # TRAINING
-    batch_size: int = 8
-    grad_accum: int = 4
+    batch_size: int = 32
+    grad_accum: int = 2
     learning_rate: float = 5e-4
     epochs: int = 5
     log_steps: int = 100
