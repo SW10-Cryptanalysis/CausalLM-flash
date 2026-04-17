@@ -17,6 +17,7 @@ handler = logging.StreamHandler()
 handler.setFormatter(EasyFormatter())
 logger = logging.getLogger(__name__)
 logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 
 def _is_checkpoint(d: Path) -> bool:
@@ -78,7 +79,7 @@ def train() -> None:
         eval_strategy="steps",
         eval_steps=config.save_steps,
         per_device_eval_batch_size=config.batch_size,
-        gradient_checkpointing=True,
+        gradient_checkpointing=config.gradient_checkpointing,
         gradient_checkpointing_kwargs={"use_reentrant": False},
         eval_accumulation_steps=4,
         logging_steps=config.log_steps,
@@ -87,7 +88,7 @@ def train() -> None:
         fp16=False,
         bf16=True,
         tf32=True,
-        dataloader_num_workers=2,
+        dataloader_num_workers=4,
         dataloader_pin_memory=True,
         ddp_find_unused_parameters=False,
         # Checkpointing
