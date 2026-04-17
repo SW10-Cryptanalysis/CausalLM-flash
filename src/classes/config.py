@@ -154,8 +154,14 @@ class Config:
 
         self.vocab_size = self.char_offset + 26 + 1
         logger.info(
-            f"Config initialized: unique_homophones={self.unique_homophones}, sep_token_id={self.sep_token_id}, space_token_id={self.space_token_id}, bos_token_id={self.bos_token_id}, eos_token_id={self.eos_token_id}, char_offset={self.char_offset}, vocab_size={self.vocab_size}",
+            f"Config initialized: unique_homophones={self.unique_homophones}, "
+            f"sep_token_id={self.sep_token_id}, "
+            f"space_token_id={self.space_token_id}, "
+            f"bos_token_id={self.bos_token_id}, "
+            f"eos_token_id={self.eos_token_id}, "
+            f"char_offset={self.char_offset}, "
+            f"vocab_size={self.vocab_size}",
         )
         logger.info(
-            f"Max len set to {self.max_context} based on use_spaces={self.use_spaces}"
+            f"Max len set to {self.max_context} based on use_spaces={self.use_spaces}",
         )
