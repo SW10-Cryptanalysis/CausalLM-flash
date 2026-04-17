@@ -63,7 +63,7 @@ class Config:
     layers: int = 16
     att_heads: int = 6
     kv_heads: int = 2
-    rope_theta: float = 1_000_000.0
+    rope_theta: float = 10_000.0
 
     @property
     def final_output_dir(self) -> Path:
