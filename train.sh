@@ -28,7 +28,6 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 export PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
 
-# ── NCCL / H100 NVLink optimisations ──────────────────────────────────────────
 export NCCL_DEBUG=INFO
 export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
 if [ "$NUM_GPUS" -gt 1 ]; then
