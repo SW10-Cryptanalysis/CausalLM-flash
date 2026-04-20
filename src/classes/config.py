@@ -62,7 +62,7 @@ class Config:
     layers: int = 16
     att_heads: int = 6
     kv_heads: int = 2
-    rope_theta: float = 1_000_000.0
+    rope_theta: float = 10_000.0
 
     @property
     def final_output_dir(self) -> Path:
@@ -106,8 +106,8 @@ class Config:
         )
 
     # TRAINING
-    batch_size: int = 2
-    grad_accum: int = 8
+    batch_size: int = 1
+    grad_accum: int = 16
     learning_rate: float = 5e-4
     epochs: int = 5
     log_steps: int = 10
