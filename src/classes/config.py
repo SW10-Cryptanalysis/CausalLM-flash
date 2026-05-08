@@ -6,7 +6,6 @@ from easy_logging import EasyFormatter
 from pathlib import Path
 
 MAX_PLAIN_SPACES = 13077
-MAX_PLAIN_NORMAL = 10063
 UNIQUE_LETTER_COUNT = 26
 BUFFER = 8
 
@@ -59,11 +58,12 @@ class Config:
     # + buffer (start/end/padding, etc) and maybe spacing "_"
     vocab_size: int = 0
     # Input is BOS + ciphertext + SEP + plaintext + EOS
-    dims: int = 384
-    layers: int = 16
-    att_heads: int = 6
-    kv_heads: int = 2
-    rope_theta: float = 10_000.0
+    dims: int = 576
+    intermediate_size: int = 1536
+    layers: int = 30
+    att_heads: int = 9
+    kv_heads: int = 3
+    rope_theta: float = 100_000.0
 
     @property
     def final_output_dir(self) -> Path:
@@ -125,7 +125,8 @@ class Config:
         """Calculate dynamic variables after the dataclass is initialized."""
         if self.use_spaces:
             return (MAX_PLAIN_SPACES * 2) + BUFFER
-        return (MAX_PLAIN_NORMAL * 2) + BUFFER
+        # This is the context of SmolLM2, so we hardcode it.
+        return 8192
 
     @property
     def tokenized_dir(self) -> Path:
