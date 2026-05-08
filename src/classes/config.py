@@ -10,7 +10,7 @@ UNIQUE_LETTER_COUNT = 26
 BUFFER = 8
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers-AAU"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
 
 HOMOPHONE_FILE = "metadata.json"
 
@@ -132,7 +132,7 @@ class Config:
     def tokenized_dir(self) -> Path:
         """Dynamic path based on whether we use spaces or not."""
         suffix = "spaced" if self.use_spaces else "normal"
-        return self.data_dir / f"tokenized_{suffix}"
+        return self.data_dir / f"tokenized_{suffix}_truncated_4000"
 
     def load_homophones(self) -> None:
         """Load the homophone metadata file and set the unique homophone count."""
