@@ -66,8 +66,8 @@ class TestConfigPaths:
     @pytest.mark.parametrize(
         "test_cfg",
         [
-            (False, "normal", "tokenized_normal"),
-            (True, "spaces", "tokenized_spaced"),
+            (False, "normal", "tokenized_normal_truncated_4000"),
+            (True, "spaces", "tokenized_spaced_truncated_4000"),
         ],
     )
     def test_dynamic_directories(

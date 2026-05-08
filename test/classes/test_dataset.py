@@ -72,7 +72,7 @@ def mock_arrow_dir(tmp_path: Path) -> Path:
     """Creates a fake Arrow dataset structure on disk for testing."""
     from datasets import Dataset as ArrowDataset
 
-    tokenized_path = tmp_path / "tokenized_normal" / "Training"
+    tokenized_path = tmp_path / "tokenized_normal_truncated_4000" / "Training"
     tokenized_path.mkdir(parents=True)
 
     dummy_data = {
