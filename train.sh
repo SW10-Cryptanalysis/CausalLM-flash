@@ -7,12 +7,14 @@ cd /work
 # Clone the repository and specific branch if it doesn't exist yet
 if [ ! -d "Llama-xFormers" ]; then
     echo "Cloning repository..."
-    git clone https://github.com/SW10-Cryptanalysis/Llama-xFormers.git
+    git clone -b smollm2 https://github.com/SW10-Cryptanalysis/Llama-xFormers.git
     cd Llama-xFormers
 else
     echo "Git pulling newest changes..."
     cd Llama-xFormers
-    git pull
+    git fetch origin
+		git checkout smollm2
+		git pull origin smollm2
 fi
 
 mkdir -p logs
