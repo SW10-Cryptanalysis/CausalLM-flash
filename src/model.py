@@ -18,7 +18,7 @@ def get_model(config: Config) -> LlamaForCausalLM:
         max_position_embeddings=config.max_context,
         hidden_size=config.dims,
         num_hidden_layers=config.layers,
-        intermediate_size=config.dims * 4,
+        intermediate_size=config.intermediate_size,
         num_attention_heads=config.att_heads,
         num_key_value_heads=config.kv_heads,
         rope_theta=config.rope_theta,
@@ -27,10 +27,12 @@ def get_model(config: Config) -> LlamaForCausalLM:
         bos_token_id=config.bos_token_id,
         eos_token_id=config.eos_token_id,
         hidden_act="silu",
-        initializer_range=0.02,
-        rms_norm_eps=1e-5,  # type: ignore
+        initializer_range=0.041666666666666664,
+        rms_norm_eps=1e-05,  # type: ignore
         attn_implementation="flash_attention_2",
         use_cache=False,
+        tie_word_embeddings=True,
+        attention_bias=False,
     )
 
     old_dtype = torch.get_default_dtype()

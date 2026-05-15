@@ -11,7 +11,7 @@ UNIQUE_LETTER_COUNT = 26
 BUFFER = 8
 
 OUTPUT_DIR = Path(__file__).parent.parent.parent / "outputs"
-DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers-AAU"
+DATA_DIR = Path(__file__).parent.parent.parent.parent / "Ciphers"
 
 HOMOPHONE_FILE = "metadata.json"
 
@@ -59,11 +59,12 @@ class Config:
     # + buffer (start/end/padding, etc) and maybe spacing "_"
     vocab_size: int = 0
     # Input is BOS + ciphertext + SEP + plaintext + EOS
-    dims: int = 384
-    layers: int = 16
-    att_heads: int = 6
-    kv_heads: int = 2
-    rope_theta: float = 10_000.0
+    dims: int = 576
+    intermediate_size: int = 1536
+    layers: int = 30
+    att_heads: int = 9
+    kv_heads: int = 3
+    rope_theta: float = 100_000.0
 
     @property
     def final_output_dir(self) -> Path:
@@ -130,8 +131,7 @@ class Config:
     @property
     def tokenized_dir(self) -> Path:
         """Dynamic path based on whether we use spaces or not."""
-        suffix = "spaced" if self.use_spaces else "normal"
-        return self.data_dir / f"tokenized_{suffix}"
+        return self.data_dir / "tokenized_normal_monoalphabetic"
 
     def load_homophones(self) -> None:
         """Load the homophone metadata file and set the unique homophone count."""
@@ -165,3 +165,4 @@ class Config:
         logger.info(
             f"Max len set to {self.max_context} based on use_spaces={self.use_spaces}",
         )
+        logger.info(f"---tokenized dir: {self.tokenized_dir}---")
