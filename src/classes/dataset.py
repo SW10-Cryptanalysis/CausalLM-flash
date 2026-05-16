@@ -55,8 +55,20 @@ class CipherPlainData(Dataset):
     def __getitem__(self, idx: int) -> CipherPlainDataItem:
         """Get the raw, unpadded item at the given index."""
         item = self.dataset[idx]
+        full_input_ids = item["input_ids"]
+        full_labels = item["labels"]
+
+        try:
+            sep_idx = full_input_ids.index(self.config.sep_token_id)
+        except ValueError:
+            raise ValueError(
+                f"Separator Token ID {self.config.sep_token_id} not found!!"
+            )
+
+        cipher_ids = full_input_ids[:sep_idx]
+        plaintext_ids = full_labels[sep_idx + 1 :]
 
         return {
-            "input_ids": item["input_ids"],
-            "labels": item["labels"],
+            "input_ids": cipher_ids,
+            "labels": plaintext_ids,
         }

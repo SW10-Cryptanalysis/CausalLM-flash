@@ -73,7 +73,14 @@ class PadCollator:
             padding_value=self.ignore_index,
         )
 
-        attention_mask = (input_ids != self.pad_token_id).long()
+        # 4D Bidirectional attention mask
+        is_real_token = input_ids != self.pad_token_id
+        valid_query = is_real_token.unsqueeze(2)
+        valid_key = is_real_token.unsqueeze(1)
+        bidirectional_mask = (valid_query & valid_key).float()
+
+        attention_mask = (1.0 - bidirectional_mask).unsqueeze(1)
+        attention_mask = attention_mask * torch.finfo(torch.float32).min
 
         return {
             "input_ids": input_ids,

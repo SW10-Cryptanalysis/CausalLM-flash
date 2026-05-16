@@ -106,12 +106,12 @@ class Config:
         )
 
     # TRAINING
-    batch_size: int = 1
-    grad_accum: int = 16
+    batch_size: int = 8
+    grad_accum: int = 2
     learning_rate: float = 5e-4
     epochs: int = 5
     log_steps: int = 10
-    save_steps: int = 1000
+    save_steps: int = 10000
     use_spaces: bool = False
 
     # SYSTEM
@@ -121,15 +121,13 @@ class Config:
     @property
     def max_context(self) -> int:
         """Calculate dynamic variables after the dataclass is initialized."""
-        if self.use_spaces:
-            return (MAX_PLAIN_SPACES * 2) + BUFFER
-        return (MAX_PLAIN_NORMAL * 2) + BUFFER
+        return 4096
 
     @property
     def tokenized_dir(self) -> Path:
         """Dynamic path based on whether we use spaces or not."""
         suffix = "spaced" if self.use_spaces else "normal"
-        return self.data_dir / f"tokenized_{suffix}"
+        return self.data_dir / f"tokenized_{suffix}_truncated_4000"
 
     def load_homophones(self) -> None:
         """Load the homophone metadata file and set the unique homophone count."""

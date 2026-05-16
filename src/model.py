@@ -37,7 +37,7 @@ def get_model(config: Config) -> LlamaForCausalLM:
         hidden_act="silu",
         initializer_range=0.02,
         rms_norm_eps=1e-5,  # type: ignore
-        attn_implementation="flash_attention_2",
+        attn_implementation="sdpa",
         # Below saves memory during training, but dont know if it should be changed?
         use_cache=False,
     )
