@@ -28,10 +28,9 @@ class AliceModelWrapper(nn.Module):
     def __init__(self, base_trunk: nn.Module, config: Config) -> None:
         super().__init__()
         self.base_trunk = base_trunk
-        self.config = config
 
-        # Expose config attribute directly to satisfy Hugging Face Trainer requirements
-        self.config_hf = base_trunk.config
+        # Isolate our custom cryptogram config away from Hugging Face's properties
+        self.crypto_config = config
 
         # Classification head projecting pooled tokens directly to the plaintext vocabulary
         self.classifier = nn.Linear(base_trunk.config.hidden_size, config.vocab_size)
@@ -62,12 +61,12 @@ class AliceModelWrapper(nn.Module):
 
     @property
     def config(self):
-        # Tie both properties to prevent Hugging Face internals from throwing attribute errors
-        return self.config_hf
+        # Explicitly serve the LlamaConfig to satisfy Hugging Face internals perfectly
+        return self.base_trunk.config
 
     @config.setter
     def config(self, value):
-        self.config_hf = value
+        self.base_trunk.config = value
 
     def forward(
         self,
@@ -80,16 +79,14 @@ class AliceModelWrapper(nn.Module):
         outputs = self.base_trunk(
             input_ids=input_ids, attention_mask=attention_mask, **kwargs
         )
-        sequence_output = (
-            outputs.last_hidden_state
-        )  # Shape: (Batch, Seq_Len, Hidden_Dim)
+        sequence_output = outputs.last_hidden_state
 
         B, L, H = sequence_output.shape
         device = sequence_output.device
         dtype = sequence_output.dtype
 
         # 0 is reserved for padding; max possible token ID is config.unique_homophones
-        num_cipher_tokens = self.config.unique_homophones + 1
+        num_cipher_tokens = self.crypto_config.unique_homophones + 1
 
         # 2. ALICE Symbol Pooling Layer
         pooled_states = torch.zeros(B, num_cipher_tokens, H, device=device, dtype=dtype)
@@ -105,14 +102,10 @@ class AliceModelWrapper(nn.Module):
 
         # Clamp counts to 1 to avoid division-by-zero errors for tokens absent in a given sample
         counts = torch.clamp(counts, min=1.0)
-        mean_pooled_symbols = (
-            pooled_states / counts
-        )  # Shape: (Batch, Num_Cipher_Tokens, Hidden_Dim)
+        mean_pooled_symbols = pooled_states / counts
 
         # 3. Global plain-character prediction per unique cipher symbol
-        symbol_logits = self.classifier(
-            mean_pooled_symbols
-        )  # Shape: (Batch, Num_Cipher_Tokens, Alphabet_Size)
+        symbol_logits = self.classifier(mean_pooled_symbols)
 
         # 4. Scatter predictions uniformly back to their original sequence coordinate indices
         expanded_logits_idx = input_ids.unsqueeze(-1).expand(
